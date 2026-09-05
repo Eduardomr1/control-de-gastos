@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Gastos",
+    "slug": "gastos",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "gastos",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "mx.eduardomaytorena.gastos"
+    },
+    "android": {
+      "package": "mx.eduardomaytorena.gastos",
+      "adaptiveIcon": { "backgroundColor": "#0B0F14" }
+    },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": true }
+  }
+}

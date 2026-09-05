@@ -1,0 +1,21 @@
+# TC-001 / TC-003 — Registro de un gasto y su reflejo en el total.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+
+- tapOn:
+    id: "fab-agregar"
+- assertVisible:
+    id: "screen-nuevo-gasto"
+
+- tapOn:
+    id: "input-monto"
+- inputText: "1,234.56"
+- tapOn:
+    id: "categoria-comida"
+- tapOn:
+    id: "btn-guardar"
+
+- assertVisible:
+    id: "screen-lista"
+- assertVisible: "$1,234.56"

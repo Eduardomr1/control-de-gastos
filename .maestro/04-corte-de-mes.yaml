@@ -1,0 +1,25 @@
+# TC-010 / BUG-002 — El gasto de fin de mes permanece en su mes local.
+# Requiere el dispositivo en America/Mazatlan con la fecha fijada al 31 de enero 23:50.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+
+- tapOn:
+    id: "fab-agregar"
+- tapOn:
+    id: "input-monto"
+- inputText: "300.00"
+- tapOn:
+    id: "categoria-otros"
+- tapOn:
+    id: "btn-guardar"
+
+- tapOn:
+    id: "tab-resumen"
+- assertVisible: "enero"
+- assertVisible: "$300.00"
+
+- swipe:
+    direction: LEFT
+- assertVisible: "febrero"
+- assertNotVisible: "$300.00"

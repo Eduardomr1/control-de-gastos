@@ -1,0 +1,27 @@
+# TC-020 / BUG-003 — El doble tap en Guardar no debe duplicar el gasto.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+
+- tapOn:
+    id: "fab-agregar"
+- tapOn:
+    id: "input-monto"
+- inputText: "99.99"
+- tapOn:
+    id: "categoria-otros"
+
+# Dos taps consecutivos sin espera intermedia.
+- tapOn:
+    id: "btn-guardar"
+- tapOn:
+    id: "btn-guardar"
+    optional: true
+
+- assertVisible:
+    id: "screen-lista"
+# Debe existir exactamente una fila con ese monto.
+- assertVisible:
+    id: "gasto-monto-9999"
+- assertNotVisible:
+    id: "gasto-monto-9999-duplicado"
