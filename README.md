@@ -3,9 +3,9 @@
 App de control de gastos personales para iOS y Android, construida como caso de
 estudio de **desarrollo móvil y aseguramiento de calidad**.
 
-[![CI](https://github.com/USUARIO/gastos/actions/workflows/ci.yml/badge.svg)](https://github.com/USUARIO/gastos/actions/workflows/ci.yml)
+[![CI](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml)
 [![Cobertura](https://img.shields.io/badge/cobertura-99%25-brightgreen)](./coverage)
-[![Tests](https://img.shields.io/badge/tests-78%20passing-brightgreen)](./src/lib)
+[![Tests](https://img.shields.io/badge/tests-120%20passing-brightgreen)](./src/lib)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2054-000020)](https://expo.dev)
 
 > **El repositorio es el producto.** La app es pequeña a propósito; lo que se
@@ -45,6 +45,7 @@ una decisión de producto, no una limitación.
 | Datos | TanStack Query | Cache, reintentos con backoff y estados de carga agregados |
 | Estado local | Zustand | Sin boilerplate para el poco estado global que hay |
 | Persistencia | MMKV | Escritura síncrona: la cola de sync sobrevive a un cierre forzado |
+| Sincronización | RPC idempotente + cola local | Convergencia entre dispositivos con la misma lógica en cliente y servidor |
 | Backend | Supabase | Auth y Postgres gestionados; el foco del proyecto es el cliente |
 | E2E | Maestro | Flujos en YAML que corren en CI sin configuración frágil |
 
@@ -94,11 +95,41 @@ ataca la causa.
 
 ---
 
+## Cómo funciona la sincronización
+
+Es la parte con más superficie de error del proyecto, así que está construida
+para que cada pieza sea verificable por separado.
+
+**Escribir.** Un gasto nuevo recibe su UUID en el cliente y entra a una cola
+persistida en MMKV. La escritura es síncrona, así que la cola ya está en disco
+antes de que la pantalla se cierre: matar la app no pierde el gasto.
+
+**Empujar.** Cada elemento de la cola viaja por `sync_expense`, una función de
+Postgres que hace upsert con last-write-wins. Reenviar el mismo id no duplica y
+una versión vieja no pisa una edición nueva. Un gasto que falla no bloquea la
+cola: se reporta y los demás continúan.
+
+**Traer.** `pull_changes` devuelve solo lo modificado desde el último cursor, no
+la tabla completa.
+
+**Reconciliar.** `reconcile()` fusiona local y remoto resolviendo cada colisión
+con `resolveConflict()` — la **misma función** que usa la cola local. Cliente y
+servidor implementan el mismo criterio, así que convergen al mismo resultado sin
+importar el orden de llegada. Hay pruebas explícitas de idempotencia y de
+independencia del orden.
+
+**Dónde vive cada cosa.** `queue.ts` no importa MMKV y `sync.ts` no importa
+Supabase: ambos son lógica pura y se prueban en Node sin mocks. Las dependencias
+nativas viven aisladas en `storage.ts` y `supabase.ts`, y son las únicas piezas
+excluidas de la cobertura, verificadas en E2E.
+
+---
+
 ## Estrategia de QA
 
 | Nivel | Herramienta | Alcance |
 |---|---|---|
-| Unitario | Jest + ts-jest | 78 pruebas, 99% de cobertura en `src/lib` |
+| Unitario | Jest + ts-jest | 120 pruebas, 99% de cobertura en `src/lib` |
 | Integración | RNTL + MSW | Flujos de componente ↔ estado ↔ red |
 | E2E | Maestro | 5 flujos en dispositivo, ejecutados en CI |
 | Accesibilidad | Manual + auditoría | Dynamic Type, contraste, VoiceOver / TalkBack |
@@ -187,10 +218,17 @@ src/
   lib/
     money.ts            Aritmética en centavos enteros
     date.ts             Periodos en hora local
-    sync.ts             Resolución de conflictos e idempotencia
+    sync.ts             Resolución de conflictos, deduplicación y reconciliación
+    queue.ts            Cola de sincronización (sin dependencias nativas)
+    mappers.ts          Traducción dominio ↔ base de datos
+    remote.ts           Push y pull contra Supabase
+    storage.ts          Instancia real de MMKV
+    supabase.ts         Cliente y envoltura tipada de rpc()
     typography.ts       Escalado de fuente accesible
     repository.ts       Acceso a datos
-  types/expense.ts      Modelo de dominio
+  types/
+    expense.ts          Modelo de dominio
+    database.ts         Tipos de las tablas y funciones
 supabase/
   migrations/           Schema, RLS y funciones de sincronización
 docs/                   Plan de pruebas, casos, bitácora, auditoría

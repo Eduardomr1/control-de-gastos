@@ -60,3 +60,26 @@ export function dedupeQueue(items: readonly Expense[]): Expense[] {
   }
   return [...byId.values()];
 }
+
+/**
+ * Fusiona el estado local con el remoto resolviendo cada colision por id.
+ *
+ * Vive aqui y no en la capa de red porque es logica pura: no depende de
+ * Supabase ni de ningun modulo nativo, y por lo tanto se prueba en Node.
+ */
+export function reconcile(
+  local: readonly Expense[],
+  remote: readonly Expense[],
+): Expense[] {
+  const byId = new Map<string, Expense>();
+  for (const expense of local) byId.set(expense.id, expense);
+
+  for (const incoming of remote) {
+    const existing = byId.get(incoming.id);
+    byId.set(
+      incoming.id,
+      existing ? resolveConflict(existing, incoming).winner : incoming,
+    );
+  }
+  return [...byId.values()];
+}
