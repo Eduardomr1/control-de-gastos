@@ -26,8 +26,19 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, padding: 24, gap: 16, justifyContent: 'center' }} testID="screen-login">
-      <Text style={typography.amount()}>Gastos</Text>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        padding: 24,
+        gap: 16,
+        justifyContent: 'center',
+        // ponytail: paleta clara fija. Sin color explicito, el tema oscuro del
+        // sistema deja texto negro sobre fondo oscuro y la pantalla se ve vacia.
+        backgroundColor: '#FFFFFF',
+      }}
+      testID="screen-login"
+    >
+      <Text style={{ ...typography.amount(), color: '#0B0F14' }}>Gastos</Text>
 
       <TextInput
         testID="input-email"
@@ -38,6 +49,7 @@ export default function LoginScreen() {
         autoComplete="email"
         keyboardType="email-address"
         accessibilityLabel="Correo electrónico"
+        placeholderTextColor="#6B7280"
         style={campo(Boolean(error))}
       />
 
@@ -49,6 +61,7 @@ export default function LoginScreen() {
         secureTextEntry
         autoComplete="password"
         accessibilityLabel="Contraseña"
+        placeholderTextColor="#6B7280"
         style={campo(Boolean(error))}
       />
 
@@ -88,6 +101,8 @@ function campo(hasError: boolean) {
     borderColor: hasError ? '#DC2626' : '#D1D5DB',
     borderRadius: 8,
     paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+    color: '#0B0F14',
     ...typography.label(),
   };
 }
