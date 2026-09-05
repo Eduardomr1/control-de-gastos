@@ -15,6 +15,7 @@ raíz y la prueba de regresión que impide que vuelvan.
 | BUG-005 | Monto cortado con Dynamic Type al 310% | P2 | Cerrado |
 | BUG-006 | Resumen renderiza secciones en cascada | P3 | Cerrado |
 | BUG-007 | Botón flotante con dimensión fija, detectado por lint | P3 | Cerrado |
+| BUG-008 | La migración falla: expresión generada no inmutable | P1 | Cerrado |
 
 ---
 
@@ -211,3 +212,43 @@ existe. BUG-005 se corrigió una vez; la regla que dejó atrás sigue encontrand
 casos. Es la diferencia entre arreglar un bug y eliminar una clase de bugs.
 
 **Regresión:** `eslint.config.js` → regla `no-restricted-syntax` sobre `height`
+
+---
+
+## BUG-008 — La migración falla: expresión generada no inmutable
+
+**Prioridad:** P1 · **Estado:** Cerrado · **Encontrado en:** primera aplicación del schema
+
+**Descripción**
+Aplicar `0001_initial.sql` en un proyecto nuevo abortaba con
+`ERROR: 42P17: generation expression is not immutable`. La migración quedaba a
+medias: las tablas creadas, la columna `month_key` no.
+
+**Reproducción**
+1. Proyecto de Supabase recién creado
+2. Ejecutar `supabase/migrations/0001_initial.sql` completo
+
+**Esperado:** "Success. No rows returned" — **Obtenido:** error 42P17
+
+**Causa raíz**
+La columna generada usaba
+`to_char(occurred_at + make_interval(...), 'YYYY-MM')` sobre un `timestamptz`.
+Esa variante de `to_char` es STABLE, no IMMUTABLE, porque su resultado depende
+del parámetro `TimeZone` de la sesión. Postgres exige inmutabilidad en columnas
+generadas: el valor se almacena en disco y debe ser reproducible con
+independencia de quién ejecute la consulta.
+
+**Corrección**
+`occurred_at at time zone 'UTC'` convierte a `timestamp` sin zona antes del
+cálculo. Sobre ese tipo, `to_char` sí es inmutable. El resultado es idéntico —
+el desplazamiento sigue viniendo de `tz_offset_minutes` — pero ahora no depende
+de la configuración de la sesión.
+
+**Aprendizaje**
+El mismo defecto que BUG-002, un nivel más abajo. En el cliente, agrupar por
+mes tomaba la zona equivocada; en el servidor, tomaba la zona de quien
+consultaba. La lección se repite: una fecha sin zona explícita siempre acaba
+resolviéndose con la zona de alguien más.
+
+**Regresión:** aplicar la migración en un proyecto limpio es parte de los
+criterios de entrada del plan de pruebas.

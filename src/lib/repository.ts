@@ -1,60 +1,59 @@
 /**
- * Acceso a datos. Stub local para el scaffold: sustituir por Supabase
- * conservando las firmas, de modo que las pantallas no cambien.
+ * Punto único de acceso a datos para las pantallas.
+ *
+ * Elige el backend en tiempo de ejecución: si hay credenciales de Supabase se
+ * usa el remoto, si no el de memoria. Eso permite abrir la app y correr la
+ * suite sin backend, y es lo que mantiene a las pantallas ignorantes de dónde
+ * viven los datos.
+ *
+ * `remote.ts` y `supabase.ts` se cargan con require() perezoso a propósito: un
+ * import estático arrastraría el binding nativo de MMKV a cualquier contexto
+ * que importe este archivo, incluidas las pruebas en Node.
  */
 
 import type { Category, Expense, NewExpenseInput } from '@/types/expense';
-import { nowLocalIso } from './date';
-import { dedupeQueue } from './sync';
+import * as local from './repository.local';
 
-const CATEGORIES: Category[] = [
-  { id: 'comida', name: 'Comida', color: '#F97316' },
-  { id: 'transporte', name: 'Transporte', color: '#0EA5E9' },
-  { id: 'hogar', name: 'Hogar', color: '#22C55E' },
-  { id: 'otros', name: 'Otros', color: '#A855F7' },
-];
+const hasCredentials = Boolean(
+  process.env['EXPO_PUBLIC_SUPABASE_URL'] &&
+    process.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'],
+);
 
-let store: Expense[] = [];
+/** True cuando la app habla con Supabase; false cuando corre en memoria. */
+export const isRemote = hasCredentials;
 
-export async function fetchCategories(): Promise<Category[]> {
-  return CATEGORIES;
+interface RemoteModule {
+  fetchCategories(): Promise<Category[]>;
+  fetchExpenses(): Promise<Expense[]>;
+  createExpense(input: NewExpenseInput): Promise<Expense>;
+  deleteExpense(id: string): Promise<void>;
 }
 
-export async function fetchExpenses(): Promise<Expense[]> {
-  return store.filter((e) => !e.deletedAt);
+let remoteCache: RemoteModule | null = null;
+function remote(): RemoteModule {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  remoteCache ??= require('./repository.remote') as RemoteModule;
+  return remoteCache;
 }
 
-/**
- * Crea un gasto. El id se genera aquí, en el cliente, lo que hace idempotente
- * cualquier reenvío y neutraliza el doble tap. Ver BUG-003.
- */
-export async function createExpense(input: NewExpenseInput): Promise<Expense> {
-  const expense: Expense = {
-    ...input,
-    id: generateId(),
-    syncState: 'pending',
-    updatedAt: new Date().toISOString(),
-  };
-  store = dedupeQueue([...store, expense]);
-  return expense;
+function backend(): RemoteModule {
+  return hasCredentials ? remote() : local;
 }
 
-export async function deleteExpense(id: string): Promise<void> {
-  const now = new Date().toISOString();
-  store = store.map((e) =>
-    e.id === id ? { ...e, deletedAt: now, updatedAt: now, syncState: 'pending' } : e,
-  );
+export function fetchCategories(): Promise<Category[]> {
+  return backend().fetchCategories();
 }
 
-export function draftOccurredAt(): string {
-  return nowLocalIso();
+export function fetchExpenses(): Promise<Expense[]> {
+  return backend().fetchExpenses();
 }
 
-function generateId(): string {
-  // UUID v4 sin dependencias externas.
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+export function createExpense(input: NewExpenseInput): Promise<Expense> {
+  return backend().createExpense(input);
 }
+
+export function deleteExpense(id: string): Promise<void> {
+  return backend().deleteExpense(id);
+}
+
+export { draftOccurredAt } from './repository.local';

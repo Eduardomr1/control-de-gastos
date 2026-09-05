@@ -5,7 +5,7 @@ estudio de **desarrollo móvil y aseguramiento de calidad**.
 
 [![CI](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml)
 [![Cobertura](https://img.shields.io/badge/cobertura-99%25-brightgreen)](./coverage)
-[![Tests](https://img.shields.io/badge/tests-120%20passing-brightgreen)](./src/lib)
+[![Tests](https://img.shields.io/badge/tests-125%20passing-brightgreen)](./src/lib)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2054-000020)](https://expo.dev)
 
 > **El repositorio es el producto.** La app es pequeña a propósito; lo que se
@@ -118,6 +118,10 @@ servidor implementan el mismo criterio, así que convergen al mismo resultado si
 importar el orden de llegada. Hay pruebas explícitas de idempotencia y de
 independencia del orden.
 
+**Elegir backend.** `repository.ts` decide en tiempo de ejecución: con
+credenciales de Supabase usa el remoto, sin ellas el de memoria. La app abre y
+la suite corre sin backend, y las pantallas nunca saben dónde viven los datos.
+
 **Dónde vive cada cosa.** `queue.ts` no importa MMKV y `sync.ts` no importa
 Supabase: ambos son lógica pura y se prueban en Node sin mocks. Las dependencias
 nativas viven aisladas en `storage.ts` y `supabase.ts`, y son las únicas piezas
@@ -129,7 +133,7 @@ excluidas de la cobertura, verificadas en E2E.
 
 | Nivel | Herramienta | Alcance |
 |---|---|---|
-| Unitario | Jest + ts-jest | 120 pruebas, 99% de cobertura en `src/lib` |
+| Unitario | Jest + ts-jest | 125 pruebas, 98.6% de cobertura en `src/lib` |
 | Integración | RNTL + MSW | Flujos de componente ↔ estado ↔ red |
 | E2E | Maestro | 5 flujos en dispositivo, ejecutados en CI |
 | Accesibilidad | Manual + auditoría | Dynamic Type, contraste, VoiceOver / TalkBack |
@@ -149,7 +153,7 @@ riesgo. La UI se prueba a nivel de flujo, no de píxel.
 
 ## Defectos destacados
 
-Siete defectos encontrados, analizados y cerrados durante el desarrollo. Los tres
+Ocho defectos encontrados, analizados y cerrados durante el desarrollo. Los tres
 más ilustrativos:
 
 | ID | Defecto | Causa raíz | Prueba de regresión |
@@ -225,7 +229,9 @@ src/
     storage.ts          Instancia real de MMKV
     supabase.ts         Cliente y envoltura tipada de rpc()
     typography.ts       Escalado de fuente accesible
-    repository.ts       Acceso a datos
+    repository.ts       Despachador: elige backend segun credenciales
+    repository.local.ts Backend en memoria, para desarrollo y pruebas
+    repository.remote.ts Backend Supabase con escritura optimista
   types/
     expense.ts          Modelo de dominio
     database.ts         Tipos de las tablas y funciones

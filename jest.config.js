@@ -15,6 +15,7 @@ module.exports = {
     '!src/lib/storage.ts',
     '!src/lib/supabase.ts',
     '!src/lib/remote.ts',
+    '!src/lib/repository.remote.ts',
   ],
   coverageThreshold: {
     global: { branches: 80, functions: 90, lines: 90, statements: 90 },
