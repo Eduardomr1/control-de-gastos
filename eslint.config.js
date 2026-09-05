@@ -74,6 +74,14 @@ module.exports = tseslint.config(
     rules: { 'no-restricted-properties': 'off' },
   },
   {
+    // mappers.ts es la frontera con la base de datos: reconstruye la hora local
+    // a partir de un instante UTC y el offset guardado, asi que necesita los
+    // getters UTC de forma deliberada. Es el unico lugar autorizado, y su
+    // correccion esta cubierta por pruebas de ida y vuelta.
+    files: ['src/lib/mappers.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
+  },
+  {
     files: ['**/*.test.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },

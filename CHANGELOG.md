@@ -17,10 +17,14 @@ versionado según [SemVer](https://semver.org/lang/es/).
 - Operación sin conexión con cola de sincronización idempotente
 - Resolución de conflictos entre dispositivos por `updatedAt`
 - Soporte de Dynamic Type hasta el máximo escalado accesible
-- Suite de 78 pruebas unitarias con 99% de cobertura en `src/lib`
+- Suite de 120 pruebas unitarias con 99% de cobertura en `src/lib`
 - 5 flujos E2E en Maestro ejecutados en CI
 - Documentación de QA: plan, casos, bitácora de defectos y auditoría de accesibilidad
 - Schema de Supabase con Row Level Security y upsert idempotente
+- Cliente de Supabase con sesión persistida en MMKV
+- Cola de sincronización persistente, desacoplada de dependencias nativas
+- Mapeo dominio ↔ base de datos con pruebas de ida y vuelta de zona horaria
+- Reconciliación local/remoto con pruebas de idempotencia e independencia del orden
 - Reglas de ESLint que protegen las decisiones de dominio
 - Perfiles de build de EAS: development, preview y production
 

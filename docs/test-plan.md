@@ -37,7 +37,7 @@ es utilizable con escalado de fuente accesible.
 
 | Nivel | Herramienta | Cobertura objetivo | Qué se valida |
 |---|---|---|---|
-| Unitario | Jest + ts-jest | ≥ 90% en `src/lib` | Aritmética, fechas, resolución de conflictos |
+| Unitario | Jest + ts-jest | ≥ 90% en `src/lib` | Aritmética, fechas, conflictos, cola de sync, mapeo de datos |
 | Integración | RNTL + MSW | Flujos críticos | Interacción componente ↔ estado ↔ red |
 | E2E | Maestro | 5 flujos principales | Recorridos reales en dispositivo |
 | Accesibilidad | Manual + auditoría | Todas las pantallas | Dynamic Type, contraste, VoiceOver / TalkBack |
@@ -52,7 +52,10 @@ es donde vive el riesgo real. La UI se prueba a nivel de flujo, no de píxel.
 | Precisión de punto flotante en montos | Totales incorrectos | Enteros en centavos, prohibido `float` en el dominio |
 | Corte de mes desfasado por zona horaria | Reportes mensuales erróneos | Periodo calculado sobre hora local, ISO con offset obligatorio |
 | Duplicados por doble tap o reintento | Datos inflados | UUID generado en cliente, cola idempotente |
-| Divergencia entre réplicas | Pérdida silenciosa de datos | Last-write-wins con desempate determinista |
+| Divergencia entre réplicas | Pérdida silenciosa de datos | Last-write-wins con desempate determinista, mismo criterio en cliente y servidor |
+| Mapeo incorrecto entre dominio y base de datos | Datos equivocados sin error visible | Módulo `mappers.ts` con pruebas de ida y vuelta |
+| Cola de sync corrupta en disco | La app no abre | Lectura tolerante a fallos: se descarta y se repuebla en el siguiente pull |
+| Fuga de datos entre usuarios | Exposición de información privada | Row Level Security en todas las tablas, con verificación explícita documentada |
 | Texto cortado con fuente ampliada | App inutilizable para parte de los usuarios | `minHeight` en lugar de `height`, auditoría al 310% |
 
 ## 5. Criterios de entrada
