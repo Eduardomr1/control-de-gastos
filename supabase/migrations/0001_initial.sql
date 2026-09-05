@@ -49,7 +49,13 @@ create table public.expenses (
 alter table public.expenses
   add column month_key text
   generated always as (
-    to_char(occurred_at + make_interval(mins => tz_offset_minutes), 'YYYY-MM')
+    -- `occurred_at at time zone 'UTC'` produce un timestamp SIN zona. Es
+    -- necesario: to_char() sobre timestamptz depende del TimeZone de la
+    -- sesion, no es inmutable, y Postgres lo rechaza en una columna generada.
+    to_char(
+      (occurred_at at time zone 'UTC') + make_interval(mins => tz_offset_minutes),
+      'YYYY-MM'
+    )
   ) stored;
 
 create index expenses_user_month_idx
