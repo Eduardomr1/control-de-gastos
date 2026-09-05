@@ -44,14 +44,18 @@ export default function AddScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, padding: 16, gap: 16 }} testID="screen-nuevo-gasto">
-      <Text style={typography.label()}>Monto</Text>
+    <SafeAreaView
+      style={{ flex: 1, padding: 16, gap: 16, backgroundColor: '#FFFFFF' }}
+      testID="screen-nuevo-gasto"
+    >
+      <Text style={{ ...typography.label(), color: '#0B0F14' }}>Monto</Text>
       <TextInput
         testID="input-monto"
         value={amount}
         onChangeText={setAmount}
         keyboardType="decimal-pad"
         placeholder="0.00"
+        placeholderTextColor="#6B7280"
         accessibilityLabel="Monto del gasto"
         style={{
           minHeight: 56,
@@ -59,6 +63,8 @@ export default function AddScreen() {
           borderColor: error ? '#DC2626' : '#D1D5DB',
           borderRadius: 8,
           paddingHorizontal: 12,
+          backgroundColor: '#FFFFFF',
+          color: '#0B0F14',
           ...typography.amount(),
         }}
       />
@@ -68,7 +74,7 @@ export default function AddScreen() {
         </Text>
       ) : null}
 
-      <Text style={typography.label()}>Categoría</Text>
+      <Text style={{ ...typography.label(), color: '#0B0F14' }}>Categoría</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {CATEGORIES.map((id) => (
           <Pressable
@@ -87,7 +93,7 @@ export default function AddScreen() {
               borderColor: categoryId === id ? '#2563EB' : '#D1D5DB',
             }}
           >
-            <Text style={typography.label()}>{id}</Text>
+            <Text style={{ ...typography.label(), color: '#0B0F14' }}>{id}</Text>
           </Pressable>
         ))}
       </View>

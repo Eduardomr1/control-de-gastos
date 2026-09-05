@@ -34,10 +34,12 @@ export default function ListScreen() {
   const total = sumCents(monthExpenses.map((e) => e.amountCents));
 
   return (
-    <SafeAreaView style={{ flex: 1 }} testID="screen-lista">
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} testID="screen-lista">
       <View style={{ padding: 16, gap: 4 }}>
-        <Text style={typography.caption()}>{formatMonthKey(currentMonth)}</Text>
-        <Text style={typography.amount()} testID="total-mes">
+        <Text style={{ ...typography.caption(), color: '#6B7280' }}>
+          {formatMonthKey(currentMonth)}
+        </Text>
+        <Text style={{ ...typography.amount(), color: '#0B0F14' }} testID="total-mes">
           {formatMoney(total)}
         </Text>
       </View>
@@ -97,13 +99,16 @@ function ExpenseRow({ expense, index }: { expense: Expense; index: number }) {
         gap: 4,
       }}
     >
-      <Text style={typography.amount()} testID={`gasto-monto-${index}`}>
+      <Text
+        style={{ ...typography.amount(), color: '#0B0F14' }}
+        testID={`gasto-monto-${index}`}
+      >
         {formatMoney(expense.amountCents, expense.currency)}
       </Text>
-      <Text style={typography.label()}>{expense.categoryId}</Text>
+      <Text style={{ ...typography.label(), color: '#374151' }}>{expense.categoryId}</Text>
       {isPending ? (
         // El estado no se comunica solo con color: lleva ícono y texto.
-        <Text testID="badge-pending" style={typography.caption()}>
+        <Text testID="badge-pending" style={{ ...typography.caption(), color: '#B45309' }}>
           ⏱ Pendiente de sincronizar
         </Text>
       ) : null}
@@ -113,7 +118,10 @@ function ExpenseRow({ expense, index }: { expense: Expense; index: number }) {
 
 function ScreenSkeleton() {
   return (
-    <SafeAreaView style={{ flex: 1, padding: 16 }} testID="skeleton-lista">
+    <SafeAreaView
+      style={{ flex: 1, padding: 16, backgroundColor: '#FFFFFF' }}
+      testID="skeleton-lista"
+    >
       {[0, 1, 2, 3].map((i) => (
         <View
           key={i}
@@ -132,15 +140,22 @@ function ScreenSkeleton() {
 function EmptyState() {
   return (
     <View style={{ padding: 32, alignItems: 'center' }}>
-      <Text style={typography.label()}>Aún no hay gastos este mes</Text>
+      <Text style={{ ...typography.label(), color: '#6B7280' }}>
+        Aún no hay gastos este mes
+      </Text>
     </View>
   );
 }
 
 function ErrorState() {
   return (
-    <SafeAreaView style={{ flex: 1, padding: 32 }} testID="error-lista">
-      <Text style={typography.label()}>No se pudieron cargar los gastos</Text>
+    <SafeAreaView
+      style={{ flex: 1, padding: 32, backgroundColor: '#FFFFFF' }}
+      testID="error-lista"
+    >
+      <Text style={{ ...typography.label(), color: '#0B0F14' }}>
+        No se pudieron cargar los gastos
+      </Text>
     </SafeAreaView>
   );
 }
