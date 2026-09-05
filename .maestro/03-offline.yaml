@@ -1,0 +1,35 @@
+# TC-021 — Registro sin red, cierre forzado y sincronización al reconectar.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+
+- setAirplaneMode: enabled
+
+- tapOn:
+    id: "fab-agregar"
+- tapOn:
+    id: "input-monto"
+- inputText: "450.00"
+- tapOn:
+    id: "categoria-transporte"
+- tapOn:
+    id: "btn-guardar"
+
+# El gasto se muestra de inmediato, marcado como pendiente.
+- assertVisible: "$450.00"
+- assertVisible:
+    id: "badge-pending"
+
+# Cierre forzado: la cola debe sobrevivir.
+- stopApp
+- launchApp
+- assertVisible: "$450.00"
+- assertVisible:
+    id: "badge-pending"
+
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible:
+      id: "badge-pending"
+    timeout: 15000
+- assertVisible: "$450.00"

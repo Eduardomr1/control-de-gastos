@@ -1,0 +1,14 @@
+appId: mx.eduardomaytorena.gastos
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "input-email"
+- inputText: "qa@ejemplo.mx"
+- tapOn:
+    id: "input-password"
+- inputText: "prueba-1234"
+- tapOn:
+    id: "btn-login"
+- assertVisible:
+    id: "screen-lista"

@@ -1,0 +1,3 @@
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml

@@ -1,0 +1,18 @@
+# TC-040 / BUG-005 — La lista sigue siendo legible con la fuente ampliada.
+# Ejecutar con el escalado de fuente del sistema al máximo accesible.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+
+- assertVisible:
+    id: "screen-lista"
+- takeScreenshot: lista-fuente-ampliada
+
+# El monto completo debe seguir visible, no recortado.
+- assertVisible:
+    id: "gasto-monto-0"
+- tapOn:
+    id: "gasto-monto-0"
+- assertVisible:
+    id: "screen-detalle"
+- takeScreenshot: detalle-fuente-ampliada
