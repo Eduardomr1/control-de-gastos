@@ -6,7 +6,7 @@ estudio de **desarrollo móvil y aseguramiento de calidad**.
 [![CI](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml)
 [![Cobertura](https://img.shields.io/badge/cobertura-99%25-brightgreen)](./coverage)
 [![Tests](https://img.shields.io/badge/tests-125%20passing-brightgreen)](./src/lib)
-[![Expo](https://img.shields.io/badge/Expo-SDK%2054-000020)](https://expo.dev)
+[![Expo](https://img.shields.io/badge/Expo-SDK%2052-000020)](https://expo.dev)
 
 > **El repositorio es el producto.** La app es pequeña a propósito; lo que se
 > demuestra aquí es cómo se decide, se prueba y se documenta un producto móvil.
@@ -39,7 +39,7 @@ una decisión de producto, no una limitación.
 
 | Capa | Elección | Motivo |
 |---|---|---|
-| Framework | Expo SDK 54 + React Native 0.76 | Un solo código para iOS y Android; EAS compila iOS sin necesidad de una Mac |
+| Framework | Expo SDK 52 + React Native 0.76 | Un solo código para iOS y Android; EAS compila iOS sin necesidad de una Mac |
 | Lenguaje | TypeScript en modo `strict` | Con `noUncheckedIndexedAccess` y `exactOptionalPropertyTypes` |
 | Navegación | Expo Router | Rutas por archivos, tipadas |
 | Datos | TanStack Query | Cache, reintentos con backoff y estados de carga agregados |
