@@ -13,9 +13,12 @@
     },
     "android": {
       "package": "mx.eduardomaytorena.gastos",
-      "adaptiveIcon": { "backgroundColor": "#0B0F14" }
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0F14"
+      }
     },
-    "plugins": ["expo-router"],
-    "experiments": { "typedRoutes": true }
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
