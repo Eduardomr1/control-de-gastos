@@ -1,7 +1,14 @@
 # TC-020 / BUG-003 — El doble tap en Guardar no debe duplicar el gasto.
+#
+# La asercion se hace sobre el TOTAL del mes, no sobre contar filas: Maestro no
+# tiene una asercion de "exactamente una coincidencia", y el total delata la
+# duplicacion de forma inequivoca. Si el gasto se guardara dos veces, el total
+# seria $199.98 en lugar de $99.99.
 appId: mx.eduardomaytorena.gastos
 ---
 - runFlow: shared/login.yaml
+- assertVisible:
+    id: "screen-lista"
 
 - tapOn:
     id: "fab-agregar"
@@ -11,7 +18,7 @@ appId: mx.eduardomaytorena.gastos
 - tapOn:
     id: "categoria-otros"
 
-# Dos taps consecutivos sin espera intermedia.
+# Dos taps consecutivos, sin espera intermedia.
 - tapOn:
     id: "btn-guardar"
 - tapOn:
@@ -20,8 +27,7 @@ appId: mx.eduardomaytorena.gastos
 
 - assertVisible:
     id: "screen-lista"
-# Debe existir exactamente una fila con ese monto.
 - assertVisible:
-    id: "gasto-monto-9999"
-- assertNotVisible:
-    id: "gasto-monto-9999-duplicado"
+    id: "total-mes"
+- assertVisible: "$99.99"
+- assertNotVisible: "$199.98"

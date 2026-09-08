@@ -51,8 +51,9 @@ suite; la columna "Evidencia" indica dónde.
 | | |
 |---|---|
 | Precondición | Dispositivo en `America/Mazatlan` (UTC-7) |
-| Pasos | 1. Registrar un gasto el 31 de enero a las 23:50<br>2. Abrir el resumen de enero<br>3. Abrir el resumen de febrero |
-| Resultado esperado | El gasto aparece en **enero**. En UTC ese instante ya es 1 de febrero, y agrupar por UTC lo colocaría en el mes equivocado. |
+| Pasos | 1. Registrar un gasto el 31 de enero a las 23:50<br>2. Verificar el total del mes en la lista |
+| Resultado esperado | El gasto entra al total de **enero**. En UTC ese instante ya es 1 de febrero, y agrupar por UTC lo colocaría en el mes equivocado. |
+| Alcance | La app muestra solo el mes actual, sin navegación entre periodos. La comparación entre meses contiguos se cubre en `date.test.ts`, que fija ambas fechas sin depender del reloj del dispositivo. |
 
 ### TC-011 — Consistencia al cambiar de zona horaria
 **Prioridad:** P2 · Manual
@@ -67,12 +68,13 @@ suite; la columna "Evidencia" indica dónde.
 ## Suite: Sincronización offline
 
 ### TC-020 — Doble tap en Guardar
-**Prioridad:** P1 · **Automatizado** · `src/lib/sync.test.ts` + `.maestro/double-tap.yaml`
+**Prioridad:** P1 · **Automatizado** · `src/lib/sync.test.ts` + `.maestro/02-double-tap.yaml`
 
 | | |
 |---|---|
 | Pasos | Presionar "Guardar" dos veces en menos de 300 ms |
 | Resultado esperado | Se crea **un solo** gasto. El id se genera en cliente, por lo que el segundo envío colapsa contra el primero. |
+| Verificación | Sobre el **total del mes**, no sobre contar filas: si se duplicara sería `$199.98` en lugar de `$99.99`. Ver BUG-011. |
 
 ### TC-021 — Persistencia de la cola tras cierre forzado
 **Prioridad:** P1 · Manual
@@ -108,7 +110,48 @@ suite; la columna "Evidencia" indica dónde.
 
 ---
 
+## Suite: Aislamiento entre cuentas
+
+### TC-027 — Los datos no se filtran entre usuarios
+**Prioridad:** P1 · Manual
+
+| | |
+|---|---|
+| Pasos | 1. Entrar con el usuario A y registrar un gasto<br>2. Cerrar sesión<br>3. Entrar con el usuario B |
+| Resultado esperado | B no ve ningún gasto de A, ni en la lista ni en el total. La copia local se limpia al cerrar sesión. |
+| Nota | Row Level Security protege el servidor; esta prueba cubre el dispositivo, donde RLS no aplica. |
+
+---
+
+## Suite: Borrado
+
+### TC-025 — Borrado con confirmación
+**Prioridad:** P2 · Manual
+
+| | |
+|---|---|
+| Pasos | 1. Mantener presionada una fila de la lista<br>2. Confirmar en el diálogo |
+| Resultado esperado | El gasto desaparece de la lista y el total se ajusta. El borrado viaja al servidor como `deletedAt`, no como eliminación física. |
+
+### TC-026 — Cancelar el borrado
+**Prioridad:** P2 · Manual
+
+| | |
+|---|---|
+| Pasos | Mantener presionada una fila y elegir Cancelar |
+| Resultado esperado | Nada cambia; el gasto permanece |
+
+---
+
 ## Suite: Sesión
+
+### TC-031 — Cierre de sesión
+**Prioridad:** P2 · Manual
+
+| | |
+|---|---|
+| Pasos | Tocar "Salir" en el encabezado de la lista |
+| Resultado esperado | Vuelve a la pantalla de login. Lo pendiente se intenta enviar antes de salir, y la copia local se borra: al entrar con otra cuenta la lista arranca vacía, sin gastos de la sesión anterior. |
 
 ### TC-030 — Expiración de sesión
 **Prioridad:** P1 · Manual
@@ -127,8 +170,8 @@ suite; la columna "Evidencia" indica dónde.
 
 | | |
 |---|---|
-| Precondición | iPhone con tamaño de texto en el máximo accesible |
-| Pasos | Recorrer las 5 pantallas |
+| Precondición | Dispositivo con tamaño de texto en el máximo accesible |
+| Pasos | Recorrer la lista y el formulario de alta |
 | Resultado esperado | Ningún texto cortado ni superpuesto; el monto sigue legible; todos los controles alcanzables |
 
 ### TC-041 — Área táctil mínima

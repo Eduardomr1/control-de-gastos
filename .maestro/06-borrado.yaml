@@ -1,0 +1,35 @@
+# TC-025 / TC-026 — Borrado con confirmacion.
+#
+# El total del mes es la asercion: si el borrado no se aplicara, seguiria
+# incluyendo el gasto. Mismo criterio que en 02-double-tap — verificar datos,
+# no la presencia de un elemento (ver BUG-011).
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+- assertVisible:
+    id: "screen-lista"
+
+- tapOn:
+    id: "fab-agregar"
+- tapOn:
+    id: "input-monto"
+- inputText: "77.00"
+- tapOn:
+    id: "categoria-hogar"
+- tapOn:
+    id: "btn-guardar"
+
+- assertVisible: "$77.00"
+
+# Cancelar no debe cambiar nada.
+- longPressOn:
+    id: "gasto-0"
+- assertVisible: "Eliminar gasto"
+- tapOn: "Cancelar"
+- assertVisible: "$77.00"
+
+# Confirmar si.
+- longPressOn:
+    id: "gasto-0"
+- tapOn: "Eliminar"
+- assertNotVisible: "$77.00"

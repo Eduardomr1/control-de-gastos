@@ -1,18 +1,20 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MoneyError, parseAmount } from '@/lib/money';
-import { createExpense, draftOccurredAt } from '@/lib/repository';
+import { createExpense, draftOccurredAt, fetchCategories } from '@/lib/repository';
 import { typography } from '@/lib/typography';
-
-const CATEGORIES = ['comida', 'transporte', 'hogar', 'otros'] as const;
 
 export default function AddScreen() {
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState<string>('comida');
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories,
+  });
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -76,24 +78,27 @@ export default function AddScreen() {
 
       <Text style={{ ...typography.label(), color: '#0B0F14' }}>Categoría</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {CATEGORIES.map((id) => (
+        {categories.map((category) => (
           <Pressable
-            key={id}
-            testID={`categoria-${id}`}
+            key={category.id}
+            testID={`categoria-${category.id}`}
             accessibilityRole="radio"
-            accessibilityState={{ selected: categoryId === id }}
-            onPress={() => setCategoryId(id)}
+            accessibilityLabel={category.name}
+            accessibilityState={{ selected: categoryId === category.id }}
+            onPress={() => setCategoryId(category.id)}
             style={{
               minHeight: 48,
               minWidth: 48,
               paddingHorizontal: 16,
               justifyContent: 'center',
               borderRadius: 24,
-              borderWidth: categoryId === id ? 2 : 1,
-              borderColor: categoryId === id ? '#2563EB' : '#D1D5DB',
+              borderWidth: categoryId === category.id ? 2 : 1,
+              borderColor: categoryId === category.id ? '#2563EB' : '#D1D5DB',
             }}
           >
-            <Text style={{ ...typography.label(), color: '#0B0F14' }}>{id}</Text>
+            <Text style={{ ...typography.label(), color: '#0B0F14' }}>
+              {category.name}
+            </Text>
           </Pressable>
         ))}
       </View>

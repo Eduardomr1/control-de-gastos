@@ -19,7 +19,7 @@ es utilizable con escalado de fuente accesible.
 
 **Dentro del alcance**
 
-- Registro, edición y borrado de gastos
+- Registro y borrado de gastos
 - Aritmética monetaria y totales por periodo
 - Agrupación mensual con manejo de zona horaria
 - Persistencia local y cola de sincronización
@@ -29,6 +29,7 @@ es utilizable con escalado de fuente accesible.
 
 **Fuera del alcance**
 
+- Edición de gastos (se registra de nuevo y se borra el anterior)
 - Presupuestos, gastos recurrentes, multi-usuario
 - Integración bancaria y escaneo de tickets
 - Pruebas de carga del backend (Supabase gestionado)
@@ -38,12 +39,14 @@ es utilizable con escalado de fuente accesible.
 | Nivel | Herramienta | Cobertura objetivo | Qué se valida |
 |---|---|---|---|
 | Unitario | Jest + ts-jest | ≥ 90% en `src/lib` | Aritmética, fechas, conflictos, cola de sync, mapeo de datos |
-| Integración | RNTL + MSW | Flujos críticos | Interacción componente ↔ estado ↔ red |
-| E2E | Maestro | 5 flujos principales | Recorridos reales en dispositivo |
+| E2E | Maestro | 6 flujos principales | Recorridos reales en dispositivo |
 | Accesibilidad | Manual + auditoría | Todas las pantallas | Dynamic Type, contraste, VoiceOver / TalkBack |
 
 La lógica de dominio (`src/lib`) se prueba de forma exhaustiva y aislada porque
-es donde vive el riesgo real. La UI se prueba a nivel de flujo, no de píxel.
+es donde vive el riesgo real. La UI se prueba a nivel de flujo con Maestro, no
+con pruebas de componente: en una app de cinco pantallas, un E2E que recorre el
+flujo real cubre más que un render aislado, y no se rompe en cada refactor de
+markup.
 
 ## 4. Riesgos identificados
 

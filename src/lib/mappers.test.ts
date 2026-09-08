@@ -118,30 +118,27 @@ describe('expenseToRpcArgs', () => {
   }
 
   it('deriva el offset de zona horaria desde occurredAt', () => {
-    expect(expenseToRpcArgs(expense(), 'user-1').p_tz_offset_minutes).toBe(-420);
+    expect(expenseToRpcArgs(expense()).p_tz_offset_minutes).toBe(-420);
   });
 
   it('envía el monto como entero de centavos', () => {
-    expect(expenseToRpcArgs(expense(), 'user-1').p_amount_cents).toBe(5000);
+    expect(expenseToRpcArgs(expense()).p_amount_cents).toBe(5000);
   });
 
   it('convierte una nota ausente en null para la base de datos', () => {
-    expect(expenseToRpcArgs(expense(), 'user-1').p_note).toBeNull();
+    expect(expenseToRpcArgs(expense()).p_note).toBeNull();
   });
 
   it('conserva la nota cuando existe', () => {
-    expect(expenseToRpcArgs(expense({ note: 'café' }), 'user-1').p_note).toBe('café');
+    expect(expenseToRpcArgs(expense({ note: 'café' })).p_note).toBe('café');
   });
 
   it('propaga el borrado lógico', () => {
-    const args = expenseToRpcArgs(
-      expense({ deletedAt: '2026-02-01T10:00:00.000Z' }),
-      'user-1',
-    );
+    const args = expenseToRpcArgs(expense({ deletedAt: '2026-02-01T10:00:00.000Z' }));
     expect(args.p_deleted_at).toBe('2026-02-01T10:00:00.000Z');
   });
 
   it('envía null cuando el gasto no está borrado', () => {
-    expect(expenseToRpcArgs(expense(), 'user-1').p_deleted_at).toBeNull();
+    expect(expenseToRpcArgs(expense()).p_deleted_at).toBeNull();
   });
 });

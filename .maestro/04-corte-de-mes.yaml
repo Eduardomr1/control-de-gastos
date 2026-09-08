@@ -1,5 +1,13 @@
 # TC-010 / BUG-002 — El gasto de fin de mes permanece en su mes local.
-# Requiere el dispositivo en America/Mazatlan con la fecha fijada al 31 de enero 23:50.
+#
+# Precondicion: dispositivo en America/Mazatlan con la fecha fijada al 31 de
+# enero, 23:50. En UTC ese instante ya es 1 de febrero, asi que un agrupamiento
+# por UTC sacaria el gasto del total de enero.
+#
+# Alcance: la app muestra solo el mes actual, sin navegacion entre periodos, asi
+# que este flujo verifica que el gasto entra al total del mes local. La
+# verificacion del mes contiguo vive en date.test.ts, que si puede fijar ambas
+# fechas sin depender del reloj del dispositivo.
 appId: mx.eduardomaytorena.gastos
 ---
 - runFlow: shared/login.yaml
@@ -14,12 +22,8 @@ appId: mx.eduardomaytorena.gastos
 - tapOn:
     id: "btn-guardar"
 
-- tapOn:
-    id: "tab-resumen"
+- assertVisible:
+    id: "screen-lista"
+# El encabezado debe seguir diciendo enero, y el total incluir el gasto.
 - assertVisible: "enero"
 - assertVisible: "$300.00"
-
-- swipe:
-    direction: LEFT
-- assertVisible: "febrero"
-- assertNotVisible: "$300.00"

@@ -67,8 +67,8 @@ export function rowToExpense(row: ExpenseRow): Expense {
   };
 }
 
-export function expenseToRpcArgs(expense: Expense, userId: string) {
-  void userId; // el servidor lo toma de auth.uid(); se acepta por simetría
+/** El `user_id` no viaja: el servidor lo toma de `auth.uid()`. */
+export function expenseToRpcArgs(expense: Expense) {
   return {
     p_id: expense.id,
     p_amount_cents: expense.amountCents,

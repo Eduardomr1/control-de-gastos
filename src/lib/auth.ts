@@ -39,7 +39,23 @@ export async function signIn(email: string, password: string): Promise<void> {
   if (error) throw new Error(traducirError(error.message));
 }
 
+/**
+ * Cierra sesión y limpia los datos locales.
+ *
+ * La copia local y la cola son del usuario que sale: dejarlas en disco haría
+ * que la siguiente persona en entrar viera gastos ajenos (BUG-013). Antes de
+ * borrarlas se intenta enviar lo pendiente, para no perder trabajo por salir.
+ */
 export async function signOut(): Promise<void> {
+  const { expenseCache, syncQueue } = await import('./storage');
+  const { pushQueue } = await import('./remote');
+
+  // Mejor esfuerzo: si no hay red, lo pendiente se pierde al limpiar. Es el
+  // precio de no filtrar datos entre cuentas, y salir es una accion explicita.
+  await pushQueue(syncQueue).catch(() => undefined);
+
+  syncQueue.clear();
+  expenseCache.clear();
   await supabase.auth.signOut();
 }
 

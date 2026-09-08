@@ -1,18 +1,25 @@
 # TC-040 / BUG-005 — La lista sigue siendo legible con la fuente ampliada.
-# Ejecutar con el escalado de fuente del sistema al máximo accesible.
+#
+# Ejecutar con el escalado de fuente del sistema al maximo accesible. Las
+# capturas alimentan docs/accessibility-audit.md.
 appId: mx.eduardomaytorena.gastos
 ---
 - runFlow: shared/login.yaml
 
 - assertVisible:
     id: "screen-lista"
+- assertVisible:
+    id: "total-mes"
 - takeScreenshot: lista-fuente-ampliada
 
-# El monto completo debe seguir visible, no recortado.
-- assertVisible:
-    id: "gasto-monto-0"
+# El formulario es donde el escalado aprieta mas: campos, etiquetas y boton
+# compiten por el alto disponible.
 - tapOn:
-    id: "gasto-monto-0"
+    id: "fab-agregar"
 - assertVisible:
-    id: "screen-detalle"
-- takeScreenshot: detalle-fuente-ampliada
+    id: "screen-nuevo-gasto"
+- assertVisible:
+    id: "input-monto"
+- assertVisible:
+    id: "btn-guardar"
+- takeScreenshot: formulario-fuente-ampliada

@@ -1,5 +1,5 @@
 import type { Expense } from '@/types/expense';
-import { SyncQueue, type QueueStorage } from './queue';
+import { ExpenseCache, SyncQueue, type QueueStorage } from './queue';
 
 /** Doble de prueba en memoria, con la misma semántica síncrona que MMKV. */
 class FakeStorage implements QueueStorage {
@@ -117,5 +117,84 @@ describe('SyncQueue', () => {
     expect(queue.cursor).toBeNull();
     queue.setCursor('2026-01-15T12:00:00.000Z');
     expect(new SyncQueue(storage).cursor).toBe('2026-01-15T12:00:00.000Z');
+  });
+});
+
+describe('ExpenseCache', () => {
+  let storage: FakeStorage;
+  let cache: ExpenseCache;
+  let queue: SyncQueue;
+
+  beforeEach(() => {
+    storage = new FakeStorage();
+    cache = new ExpenseCache(storage);
+    queue = new SyncQueue(storage);
+  });
+
+  it('empieza vacía', () => {
+    expect(cache.read()).toEqual([]);
+  });
+
+  it('conserva lo que se le escribe', () => {
+    cache.write([expense({ id: 'a' }), expense({ id: 'b' })]);
+    expect(cache.read()).toHaveLength(2);
+  });
+
+  it('sobrevive a reiniciar la app', () => {
+    cache.write([expense({ amountCents: 45000 })]);
+    expect(new ExpenseCache(storage).read()[0]?.amountCents).toBe(45000);
+  });
+
+  // BUG-012 — la cola se vacía al confirmarse; la copia local no.
+  it('conserva los gastos aunque la cola se vacíe tras sincronizar', () => {
+    const e = expense({ id: 'a' });
+    queue.enqueue(e);
+    cache.upsert(e);
+
+    // El servidor confirma y la cola se vacía.
+    queue.acknowledge(['a']);
+
+    expect(queue.size).toBe(0);
+    // La lista sigue teniendo qué mostrar. Sin esto, la pantalla queda vacía.
+    expect(cache.read()).toHaveLength(1);
+  });
+
+  it('upsert reemplaza en lugar de duplicar', () => {
+    cache.upsert(expense({ amountCents: 1000, updatedAt: '2026-01-15T12:00:00.000Z' }));
+    cache.upsert(expense({ amountCents: 2000, updatedAt: '2026-01-15T13:00:00.000Z' }));
+
+    expect(cache.read()).toHaveLength(1);
+    expect(cache.read()[0]?.amountCents).toBe(2000);
+  });
+
+  it('el borrado lógico permanece en la copia para poder propagarse', () => {
+    const e = expense({ id: 'a' });
+    cache.upsert(e);
+    cache.upsert({ ...e, deletedAt: '2026-01-16T00:00:00.000Z', updatedAt: '2026-01-16T00:00:00.000Z' });
+
+    expect(cache.read()).toHaveLength(1);
+    expect(cache.read()[0]?.deletedAt).toBeDefined();
+  });
+
+  it('usa una clave distinta a la de la cola: no se pisan entre sí', () => {
+    queue.enqueue(expense({ id: 'en-cola' }));
+    cache.write([expense({ id: 'en-cache' })]);
+
+    expect(queue.read()[0]?.id).toBe('en-cola');
+    expect(cache.read()[0]?.id).toBe('en-cache');
+  });
+
+  it('se recupera de una copia corrupta', () => {
+    cache.write([expense()]);
+    storage.corrupt('expenses:all');
+
+    expect(() => cache.read()).not.toThrow();
+    expect(cache.read()).toEqual([]);
+  });
+
+  it('se vacía por completo con clear', () => {
+    cache.write([expense()]);
+    cache.clear();
+    expect(cache.read()).toEqual([]);
   });
 });

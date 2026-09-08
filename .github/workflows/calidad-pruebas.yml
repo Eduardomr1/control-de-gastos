@@ -1,0 +1,29 @@
+# Vigia revisa que las pruebas de cada PR verifiquen algo de verdad.
+#
+# Nacio de BUG-011 de este mismo proyecto: un flujo E2E que hacia
+# assertNotVisible sobre un identificador que la app nunca genera. Una asercion
+# negativa sobre algo imposible pasa siempre.
+#
+# https://github.com/eduardo-mr1/vigia
+name: Calidad de pruebas
+
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  vigia:
+    name: Vigia
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Necesario para comparar contra la rama base y analizar solo lo que
+          # el PR toca.
+          fetch-depth: 0
+
+      - uses: eduardo-mr1/vigia@main
+        with:
+          codigo-fuente: './app'
