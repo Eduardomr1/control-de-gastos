@@ -18,7 +18,7 @@
 | Operable sin depender del color | Cumple |
 | Reducción de movimiento respetada | Cumple |
 
-Hallazgos abiertos: **0 P1**, **0 P2**, **1 P3**.
+Hallazgos abiertos: **0 P1**, **0 P2**, **2 P3**.
 
 ---
 
@@ -60,7 +60,11 @@ contenedores con altura fija recortan el texto.
 | Etiqueta del botón primario | 8.2:1 | 4.5:1 | Cumple |
 | Indicador de estado `pending` | 5.3:1 | 3:1 | Cumple |
 
-Verificado en tema claro y oscuro.
+Verificado en tema claro. La app declara `userInterfaceStyle: "light"` de forma
+deliberada: tiene una sola paleta, y anunciar soporte de tema oscuro sin
+implementarlo produjo BUG-010 — texto negro sobre fondo oscuro, contraste de
+1.2:1. Soportar tema oscuro es trabajo pendiente, no una casilla que se marca
+en la configuración.
 
 ---
 
@@ -105,3 +109,14 @@ usuario debe navegar hasta el encabezado para saber en qué mes está.
 
 *Corrección propuesta:* `AccessibilityInfo.announceForAccessibility` con la
 etiqueta del mes al confirmarse el cambio.
+
+---
+
+**A11Y-002 — Sin soporte de tema oscuro**
+**Prioridad:** P3
+
+La app fija el tema claro. Un usuario con el sistema en oscuro recibe una
+pantalla luminosa, lo que molesta de noche aunque sea legible.
+
+*Corrección propuesta:* tokens de color por tema y `useColorScheme()`. Se
+difiere a propósito: media paleta oscura es peor que ninguna (ver BUG-010).

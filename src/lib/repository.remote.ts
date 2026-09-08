@@ -7,9 +7,8 @@
  */
 
 import type { Category, Expense, NewExpenseInput } from '@/types/expense';
-import { nowLocalIso } from './date';
 import { pullChanges, pushQueue } from './remote';
-import { syncQueue } from './storage';
+import { expenseCache, syncQueue } from './storage';
 import { currentUserId, supabase } from './supabase';
 import type { CategoryRow } from '@/types/database';
 
@@ -31,17 +30,20 @@ export async function fetchExpenses(): Promise<Expense[]> {
   const userId = await currentUserId();
   if (!userId) throw new Error('Sesión no iniciada');
 
-  const localExpenses = syncQueue.read();
+  // La copia local es la fuente de lectura, no la cola: la cola se vacia al
+  // confirmarse el envio y dejaria la lista vacia (BUG-012).
+  const cached = expenseCache.read();
 
   try {
-    await pushQueue(syncQueue, userId);
-    const merged = await pullChanges(syncQueue, localExpenses);
+    await pushQueue(syncQueue);
+    const merged = await pullChanges(syncQueue, cached);
+    expenseCache.write(merged);
     return merged.filter((e) => !e.deletedAt);
   } catch {
-    // ponytail: sin red se sirve lo local. La cola conserva lo pendiente y el
-    // siguiente fetch reintenta; no hace falta backoff propio, TanStack Query
-    // ya reintenta con retraso exponencial.
-    return localExpenses.filter((e) => !e.deletedAt);
+    // ponytail: sin red se sirve la copia local. La cola conserva lo pendiente
+    // y el siguiente fetch reintenta; no hace falta backoff propio, TanStack
+    // Query ya reintenta con retraso exponencial.
+    return cached.filter((e) => !e.deletedAt);
   }
 }
 
@@ -54,27 +56,32 @@ export async function createExpense(input: NewExpenseInput): Promise<Expense> {
   };
 
   // Primero a disco, después a la red: si la app muere aquí, el gasto existe.
+  // Entra a la cola (lo que falta enviar) y a la copia local (lo que se lee).
   syncQueue.enqueue(expense);
+  expenseCache.upsert(expense);
 
   const userId = await currentUserId();
-  if (userId) void pushQueue(syncQueue, userId).catch(() => undefined);
+  if (userId) void pushQueue(syncQueue).catch(() => undefined);
 
   return expense;
 }
 
 export async function deleteExpense(id: string): Promise<void> {
-  const existing = syncQueue.read().find((e) => e.id === id);
+  const existing = expenseCache.read().find((e) => e.id === id);
   if (!existing) return;
 
   const now = new Date().toISOString();
-  syncQueue.enqueue({ ...existing, deletedAt: now, updatedAt: now, syncState: 'pending' });
+  const deleted: Expense = {
+    ...existing,
+    deletedAt: now,
+    updatedAt: now,
+    syncState: 'pending',
+  };
+  syncQueue.enqueue(deleted);
+  expenseCache.upsert(deleted);
 
   const userId = await currentUserId();
-  if (userId) void pushQueue(syncQueue, userId).catch(() => undefined);
-}
-
-export function draftOccurredAt(): string {
-  return nowLocalIso();
+  if (userId) void pushQueue(syncQueue).catch(() => undefined);
 }
 
 /** UUID v4 generado en el cliente: es lo que hace idempotente el sync. */

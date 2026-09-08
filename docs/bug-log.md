@@ -16,6 +16,11 @@ raíz y la prueba de regresión que impide que vuelvan.
 | BUG-006 | Resumen renderiza secciones en cascada | P3 | Cerrado |
 | BUG-007 | Botón flotante con dimensión fija, detectado por lint | P3 | Cerrado |
 | BUG-008 | La migración falla: expresión generada no inmutable | P1 | Cerrado |
+| BUG-009 | Render parcial silencioso por versiones desalineadas del SDK | P1 | Cerrado |
+| BUG-010 | Pantallas ilegibles en tema oscuro por falta de paleta propia | P2 | Cerrado |
+| BUG-011 | Flujos E2E apuntando a elementos que la app no tiene | P2 | Cerrado |
+| BUG-012 | La lista se vacía tras la primera sincronización exitosa | P1 | Cerrado |
+| BUG-013 | Los gastos quedan en el dispositivo al cerrar sesión | P1 | Cerrado |
 
 ---
 
@@ -252,3 +257,219 @@ resolviéndose con la zona de alguien más.
 
 **Regresión:** aplicar la migración en un proyecto limpio es parte de los
 criterios de entrada del plan de pruebas.
+
+---
+
+## BUG-009 — Render parcial silencioso por versiones desalineadas del SDK
+
+**Prioridad:** P1 · **Estado:** Cerrado · **Encontrado en:** prueba en dispositivo
+
+**Descripción**
+La pantalla de login mostraba únicamente el título. Los dos campos de texto y el
+botón no aparecían. Sin pantalla roja, sin error en consola, sin advertencia: la
+app simplemente renderizaba una fracción del árbol.
+
+**Reproducción**
+1. `package.json` declara `expo@57`
+2. `node_modules` contiene `react@18`, `react-native@0.76` y `expo-router@4`
+3. Abrir cualquier pantalla en Expo Go
+
+**Esperado:** la pantalla completa — **Obtenido:** solo los componentes `Text`
+
+**Causa raíz**
+Dos fallos encadenados. Primero, el proyecto se alineó hacia abajo, a SDK 52,
+para que coincidiera con lo instalado; pero Expo Go se distribuye solo con el
+SDK más reciente, así que la app no era ejecutable en el dispositivo. Al subir
+a SDK 57, `expo install --fix` actualizó `package.json` pero la instalación no
+llegó a materializarse en `node_modules`, que quedó con las versiones viejas.
+
+La combinación `expo@57` + `react-native@0.76` no lanza error: los componentes
+nativos que cambiaron de interfaz entre versiones simplemente no montan. El
+resultado es una pantalla a medias, que es peor que un fallo ruidoso, porque
+parece un bug de layout propio y desvía la búsqueda.
+
+**Corrección**
+Reinstalación limpia con las versiones de SDK 57 y verificación explícita de lo
+que quedó en disco, no de lo declarado:
+
+```
+node -e "console.log(require('react-native/package.json').version)"
+```
+
+**Aprendizaje**
+`package.json` declara intenciones; `node_modules` es lo que corre. Cuando el
+síntoma no tiene sentido, verificar lo segundo antes de sospechar del propio
+código. Se perdió cerca de una hora buscando un error de estilos que no existía.
+
+**Regresión:** el CI corre `npm ci`, que instala exactamente el lockfile y falla
+en lugar de quedarse a medias.
+
+---
+
+## BUG-010 — Pantallas ilegibles en tema oscuro por falta de paleta propia
+
+**Prioridad:** P2 · **Estado:** Cerrado · **Encontrado en:** prueba en dispositivo
+
+**Descripción**
+Con el tema oscuro del sistema activo, el texto de las pantallas quedaba negro
+sobre fondo oscuro: contenido presente pero ilegible.
+
+**Causa raíz**
+`app.json` declaraba `userInterfaceStyle: "automatic"`, que permite al sistema
+pintar fondos oscuros, mientras que ningún componente definía color de texto ni
+de fondo. React Native no aporta una paleta por defecto que se adapte: sin color
+explícito, el texto es negro pase lo que pase.
+
+Es un defecto de accesibilidad, no cosmético: el contraste resultante es
+aproximadamente 1.2:1, muy por debajo del mínimo AA de 4.5:1.
+
+**Corrección**
+Colores explícitos en las tres pantallas y `userInterfaceStyle: "light"` mientras
+la app tenga una sola paleta. Declarar soporte de tema oscuro sin implementarlo
+es peor que no declararlo.
+
+**Aprendizaje**
+Fue detectado en dispositivo, no en la auditoría de accesibilidad, porque esta
+se hizo sobre capturas en tema claro. La auditoría ahora incluye ambos temas.
+
+**Regresión:** `docs/accessibility-audit.md`, sección de contraste
+
+---
+
+## BUG-011 — Flujos E2E apuntando a elementos que la app no tiene
+
+**Prioridad:** P2 · **Estado:** Cerrado · **Encontrado en:** revisión cruzada de identificadores
+
+**Descripción**
+Tres de los cinco flujos de Maestro referenciaban identificadores inexistentes:
+`screen-detalle`, `tab-resumen` y `gasto-monto-9999-duplicado`. Ninguna de esas
+pantallas ni elementos llegó a construirse.
+
+**Cómo se encontró**
+Contrastando los `testID` presentes en `app/*.tsx` contra los `id:` esperados por
+`.maestro/*.yaml`. Es una comparación de dos listas que toma segundos y que nadie
+hace hasta que la suite falla.
+
+**Causa raíz**
+Los flujos se escribieron a partir del plan de pruebas, que describe la app
+completa, en lugar de la app construida. El plan contemplaba una pantalla de
+detalle y navegación entre meses; el alcance se cerró antes de implementarlas y
+los flujos no se ajustaron.
+
+El caso más engañoso era `gasto-monto-9999-duplicado`: un identificador inventado
+que la app nunca genera. `assertNotVisible` sobre algo que no puede existir pasa
+siempre. La prueba habría estado en verde sin verificar nada — el peor resultado
+posible, porque da confianza falsa sobre el defecto más importante del proyecto.
+
+**Corrección**
+Los tres flujos se reescribieron contra la interfaz real. La verificación del
+doble tap ahora se hace sobre el **total del mes**: si el gasto se duplicara, el
+total sería `$199.98` en lugar de `$99.99`. Es una aserción sobre datos, no sobre
+la existencia de un elemento, y no puede pasar por vacuidad.
+
+La verificación del corte de mes entre periodos contiguos se movió a
+`date.test.ts`, que puede fijar ambas fechas sin depender del reloj del
+dispositivo.
+
+**Aprendizaje**
+Una aserción negativa sobre un elemento inexistente es una prueba que siempre
+pasa. Al escribir `assertNotVisible`, verificar primero que el elemento pueda
+existir en algún estado; si no, la aserción no prueba nada.
+
+Este defecto dio origen a **[Vigía](https://github.com/eduardo-mr1/vigia)**, una
+herramienta que automatiza esa verificación: cruza los identificadores que el
+código puede producir contra los que esperan las pruebas, y marca los que solo
+existen en las pruebas. Corre sobre este repositorio en cada Pull Request.
+
+**Regresión:** [Vigía](https://github.com/eduardo-mr1/vigia) en cada PR, más el
+contraste manual de `testID` contra `id:` de Maestro antes de cada release
+
+---
+
+## BUG-012 — La lista se vacía tras la primera sincronización exitosa
+
+**Prioridad:** P1 · **Estado:** Cerrado · **Encontrado en:** revisión de código
+
+**Descripción**
+Al abrir la app por segunda vez, con red disponible, la lista aparecía vacía
+aunque hubiera gastos guardados en el servidor. Los gastos recién creados se
+veían un momento y desaparecían en el siguiente refresco.
+
+**Reproducción**
+1. Registrar un gasto con red disponible
+2. Esperar a que se sincronice
+3. Volver a abrir la lista
+
+**Esperado:** el gasto sigue visible — **Obtenido:** lista vacía
+
+**Causa raíz**
+`fetchExpenses` usaba la cola de sincronización como fuente de lectura. Pero la
+cola guarda **lo que falta enviar**, y `acknowledge()` la vacía en cuanto el
+servidor confirma. Después de un envío exitoso la cola queda vacía por diseño, y
+con ella la lista.
+
+El defecto quedaba oculto porque `pullChanges` devolvía los gastos del servidor
+en la misma llamada, así que el primer refresco se veía bien. Solo a partir del
+segundo, con el cursor ya avanzado, `pull_changes` devolvía cero filas —no había
+cambios nuevos— y el resultado del merge era el conjunto vacío.
+
+Es una confusión de responsabilidades: una cola de salida y un almacén de
+lectura resuelven problemas distintos, y usar una como el otro funciona
+exactamente hasta que la cola cumple su función.
+
+**Corrección**
+Se agregó `ExpenseCache`: una copia local de todos los gastos conocidos, con su
+propia clave de almacenamiento. La cola sigue siendo solo de pendientes.
+`fetchExpenses` lee de la copia, reconcilia contra el servidor y reescribe la
+copia con el resultado. Sin red, la copia es lo que se muestra.
+
+**Aprendizaje**
+El defecto no lo habría encontrado ninguna prueba existente: la cola se
+comportaba correctamente y la reconciliación también. El error estaba en la
+composición de dos piezas sanas. Las pruebas unitarias verifican unidades; los
+errores de integración necesitan una prueba que atraviese el ciclo completo,
+o una lectura atenta del flujo.
+
+**Regresión:** `queue.test.ts` → "conserva los gastos aunque la cola se vacíe
+tras sincronizar"
+
+---
+
+## BUG-013 — Los gastos quedan en el dispositivo al cerrar sesión
+
+**Prioridad:** P1 · **Estado:** Cerrado · **Encontrado en:** revisión de código
+
+**Descripción**
+Al cerrar sesión, la copia local de gastos y la cola de sincronización
+permanecían en MMKV. La siguiente persona en entrar en ese dispositivo veía los
+gastos de la cuenta anterior.
+
+**Reproducción**
+1. Entrar con el usuario A y registrar un gasto
+2. Cerrar sesión
+3. Entrar con el usuario B
+
+**Esperado:** lista vacía para B — **Obtenido:** los gastos de A
+
+**Causa raíz**
+`signOut` solo invalidaba el token en Supabase. El almacenamiento local es
+independiente de la sesión: nada lo vinculaba al usuario ni lo limpiaba al
+salir.
+
+El defecto no lo cubría Row Level Security, y ahí está lo interesante: RLS
+protege el servidor, y una consulta con el token de B nunca devolvería filas de
+A. Pero la copia local se lee **antes** de consultar, precisamente para poder
+funcionar sin red. La protección del servidor no alcanza a los datos ya
+descargados.
+
+**Corrección**
+`signOut` ahora intenta enviar lo pendiente, limpia la cola y la copia local, y
+después cierra la sesión. Si no hay red, lo pendiente se pierde: es el precio de
+no filtrar datos entre cuentas, y salir es una acción explícita del usuario.
+
+**Aprendizaje**
+Una app offline-first mantiene una copia de los datos fuera del alcance de las
+políticas del servidor. Cada mecanismo de seguridad del backend necesita su
+contraparte en el cliente, o protege solo la mitad del camino.
+
+**Regresión:** TC-027 — aislamiento entre cuentas

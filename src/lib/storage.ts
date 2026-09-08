@@ -7,7 +7,7 @@
 
 import { MMKV } from 'react-native-mmkv';
 
-import { SyncQueue, type QueueStorage } from './queue';
+import { ExpenseCache, SyncQueue, type QueueStorage } from './queue';
 
 const mmkv = new MMKV({ id: 'sync' });
 
@@ -18,3 +18,4 @@ export const deviceStorage: QueueStorage = {
 };
 
 export const syncQueue = new SyncQueue(deviceStorage);
+export const expenseCache = new ExpenseCache(deviceStorage);

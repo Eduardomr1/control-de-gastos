@@ -22,16 +22,13 @@ export interface PushResult {
  * upsert idempotente: reenviar el mismo id no duplica, y una versión vieja
  * no pisa una edición nueva.
  */
-export async function pushQueue(
-  queue: SyncQueue,
-  userId: string,
-): Promise<PushResult> {
+export async function pushQueue(queue: SyncQueue): Promise<PushResult> {
   const pending = queue.read();
   const acknowledged: string[] = [];
   const failed: { id: string; reason: string }[] = [];
 
   for (const expense of pending) {
-    const { error } = await callRpc('sync_expense', expenseToRpcArgs(expense, userId));
+    const { error } = await callRpc('sync_expense', expenseToRpcArgs(expense));
 
     if (error) {
       failed.push({ id: expense.id, reason: error.message });

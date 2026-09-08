@@ -1,16 +1,30 @@
-import { useQueries } from '@tanstack/react-query';
+import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'expo-router';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { formatMonthKey, groupByMonth, monthKeyOf, nowLocalIso } from '@/lib/date';
 import { formatMoney, sumCents } from '@/lib/money';
 import { controlSize, rowMinHeight, typography } from '@/lib/typography';
-import { fetchCategories, fetchExpenses } from '@/lib/repository';
-import type { Expense } from '@/types/expense';
+import { deleteExpense, fetchCategories, fetchExpenses, isRemote } from '@/lib/repository';
+import { signOut } from '@/lib/auth';
+import type { Category, Expense } from '@/types/expense';
 
 export default function ListScreen() {
   const currentMonth = monthKeyOf(nowLocalIso());
+  const queryClient = useQueryClient();
+
+  const removal = useMutation({
+    mutationFn: deleteExpense,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }),
+  });
+
+  function confirmRemoval(id: string, label: string) {
+    Alert.alert('Eliminar gasto', `¿Eliminar ${label}?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Eliminar', style: 'destructive', onPress: () => removal.mutate(id) },
+    ]);
+  }
 
   // Carga Verdadera: las tres consultas se evalúan en conjunto y la pantalla
   // no renderiza contenido parcial. Ver BUG-006.
@@ -27,8 +41,12 @@ export default function ListScreen() {
   if (isPending) return <ScreenSkeleton />;
   if (isError) return <ErrorState />;
 
-  const [expensesResult] = results;
+  const [expensesResult, categoriesResult] = results;
   const expenses = (expensesResult?.data ?? []) as Expense[];
+  const categories = (categoriesResult?.data ?? []) as Category[];
+  // La consulta de categorías ya se hacía para el gating de carga; aquí se le
+  // da uso: la fila muestra el nombre legible en vez del identificador crudo.
+  const categoryNames = new Map(categories.map((c) => [c.id, c.name]));
   const visible = expenses.filter((e) => !e.deletedAt);
   const monthExpenses = groupByMonth(visible).get(currentMonth) ?? [];
   const total = sumCents(monthExpenses.map((e) => e.amountCents));
@@ -36,9 +54,23 @@ export default function ListScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} testID="screen-lista">
       <View style={{ padding: 16, gap: 4 }}>
-        <Text style={{ ...typography.caption(), color: '#6B7280' }}>
-          {formatMonthKey(currentMonth)}
-        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={{ ...typography.caption(), color: '#6B7280' }}>
+            {formatMonthKey(currentMonth)}
+          </Text>
+          {isRemote ? (
+            <Pressable
+              testID="btn-salir"
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar sesión"
+              onPress={signOut}
+              // 44pt es el minimo tactil de Apple y Material.
+              style={{ minHeight: 44, minWidth: 44, justifyContent: 'center' }}
+            >
+              <Text style={{ ...typography.caption(), color: '#2563EB' }}>Salir</Text>
+            </Pressable>
+          ) : null}
+        </View>
         <Text style={{ ...typography.amount(), color: '#0B0F14' }} testID="total-mes">
           {formatMoney(total)}
         </Text>
@@ -47,7 +79,16 @@ export default function ListScreen() {
       <FlatList
         data={monthExpenses}
         keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => <ExpenseRow expense={item} index={index} />}
+        renderItem={({ item, index }) => (
+          <ExpenseRow
+            expense={item}
+            index={index}
+            categoryName={categoryNames.get(item.categoryId) ?? item.categoryId}
+            onLongPress={() =>
+              confirmRemoval(item.id, formatMoney(item.amountCents, item.currency))
+            }
+          />
+        )}
         ListEmptyComponent={<EmptyState />}
       />
 
@@ -77,16 +118,31 @@ export default function ListScreen() {
   );
 }
 
-function ExpenseRow({ expense, index }: { expense: Expense; index: number }) {
+function ExpenseRow({
+  expense,
+  index,
+  categoryName,
+  onLongPress,
+}: {
+  expense: Expense;
+  index: number;
+  categoryName: string;
+  onLongPress: () => void;
+}) {
   const isPending = expense.syncState === 'pending';
   return (
-    <View
+    <Pressable
+      onLongPress={onLongPress}
+      // ponytail: mantener presionado en vez de deslizar. Un swipe necesita
+      // gesture-handler y layout propio; el long press ya lo trae Pressable y
+      // los lectores de pantalla lo anuncian solo.
+      accessibilityHint="Mantén presionado para eliminar"
       testID={`gasto-${index}`}
       accessible
       accessibilityLabel={[
         'Gasto',
         formatMoney(expense.amountCents, expense.currency),
-        expense.categoryId,
+        categoryName,
         isPending ? 'Pendiente de sincronizar' : '',
       ]
         .filter(Boolean)
@@ -105,14 +161,14 @@ function ExpenseRow({ expense, index }: { expense: Expense; index: number }) {
       >
         {formatMoney(expense.amountCents, expense.currency)}
       </Text>
-      <Text style={{ ...typography.label(), color: '#374151' }}>{expense.categoryId}</Text>
+      <Text style={{ ...typography.label(), color: '#374151' }}>{categoryName}</Text>
       {isPending ? (
         // El estado no se comunica solo con color: lleva ícono y texto.
         <Text testID="badge-pending" style={{ ...typography.caption(), color: '#B45309' }}>
           ⏱ Pendiente de sincronizar
         </Text>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 
