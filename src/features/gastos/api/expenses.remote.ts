@@ -7,8 +7,9 @@
  */
 
 import type { Category, Expense, NewExpenseInput } from '@/types/expense';
-import { pullChanges, pushQueue } from './remote';
-import { expenseCache, syncQueue } from '@/shared/storage/deviceStorage';
+import { pullChanges, pushQueue } from './sync';
+import { expenseCache } from '../store/expenseCache';
+import { syncQueue } from '../store/syncQueueInstance';
 import { currentUserId, supabase } from '@/shared/lib/supabase';
 import { traducirPostgrest } from '@/shared/errors';
 import type { Failure } from '@/shared/errors';

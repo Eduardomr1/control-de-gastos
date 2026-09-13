@@ -1,25 +1,25 @@
 /**
  * Instancias reales de almacenamiento. Único módulo que toca MMKV.
  *
- * Aislarlo aquí mantiene a `queue.ts` y a `supabase.ts` libres de dependencias
- * nativas en su superficie pública, y por lo tanto comprobables en Node sin
- * mocks.
+ * Aislarlo aquí mantiene a `supabase.ts` y a la cola de sync libres de
+ * dependencias nativas en su superficie pública, y por lo tanto comprobables
+ * en Node sin mocks.
+ *
+ * Este módulo no construye `SyncQueue` ni el caché de gastos: esas clases
+ * viven en `features/gastos/store/`, y `shared/` nunca importa de
+ * `features/` (Regla 1). Cada feature arma su propia instancia con el
+ * `deviceStorage` de aquí.
  */
 
 import { MMKV } from 'react-native-mmkv';
 
-import { ExpenseCache, SyncQueue, type QueueStorage } from '@/lib/queue';
-
 const mmkv = new MMKV({ id: 'sync' });
 
-export const deviceStorage: QueueStorage = {
-  getString: (key) => mmkv.getString(key),
-  set: (key, value) => mmkv.set(key, value),
-  delete: (key) => mmkv.delete(key),
+export const deviceStorage = {
+  getString: (key: string) => mmkv.getString(key),
+  set: (key: string, value: string) => mmkv.set(key, value),
+  delete: (key: string) => mmkv.delete(key),
 };
-
-export const syncQueue = new SyncQueue(deviceStorage);
-export const expenseCache = new ExpenseCache(deviceStorage);
 
 /**
  * Almacenamiento de sesión para supabase-js. La escritura es síncrona, así que
