@@ -6,17 +6,37 @@ module.exports = {
   moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
   collectCoverageFrom: [
     'src/lib/**/*.ts',
+    'src/shared/**/*.ts',
+    'src/features/**/*.ts',
     '!**/*.test.ts',
-    // typography.ts depende de PixelRatio de React Native: se verifica en el
+    // tipografia.ts depende de PixelRatio de React Native: se verifica en el
     // E2E de Dynamic Type (.maestro/05-dynamic-type.yaml), no en unitarias.
-    '!src/lib/typography.ts',
-    // Modulos que solo envuelven dependencias nativas (MMKV, supabase-js): su
-    // comportamiento se verifica en E2E, no en unitarias.
-    '!src/lib/storage.ts',
-    '!src/lib/db.ts',
-    '!src/lib/supabase.ts',
-    '!src/lib/remote.ts',
-    '!src/lib/repository.remote.ts',
+    '!src/shared/theme/tipografia.ts',
+    // Modulos que solo envuelven dependencias nativas (MMKV, supabase-js,
+    // expo-sqlite) o hablan directo con la red: su comportamiento se verifica
+    // en E2E o en dispositivo, no en unitarias.
+    '!src/shared/storage/deviceStorage.ts',
+    '!src/shared/lib/supabase.ts',
+    '!src/features/gastos/store/expenseDb.ts',
+    '!src/features/gastos/store/syncQueueInstance.ts',
+    '!src/features/gastos/api/sync.ts',
+    '!src/features/gastos/api/expenses.remote.ts',
+    // Barrels que solo reexportan: no tienen lógica propia que romper, y
+    // Jest los marca en 0% porque las pruebas importan cada módulo interno
+    // directo, no a través del barrel (que ademas los tests de auth.ts
+    // mockean por completo).
+    '!src/features/gastos/index.ts',
+    '!src/shared/ui/index.ts',
+    // colores.ts es un objeto de datos sin lógica, y los componentes que lo
+    // consumen (GTexto, GBoton, GCampo) no tienen prueba unitaria propia por
+    // la misma razón que auth.test.ts documenta para useSession: dependen de
+    // un entorno de render que este proyecto no monta en Node.
+    '!src/shared/theme/colores.ts',
+    // Hooks de React: useQueries/useMutation/useState+useEffect necesitan un
+    // entorno de render (React Testing Library con jest-expo o similar), que
+    // este proyecto no tiene. Se verifican en los flujos de .maestro/.
+    '!src/features/gastos/hooks/**',
+    '!src/lib/useSession.ts',
   ],
   coverageThreshold: {
     global: { branches: 80, functions: 90, lines: 90, statements: 90 },

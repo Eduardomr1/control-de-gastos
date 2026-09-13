@@ -1,10 +1,13 @@
 /**
  * Pruebas de sesion.
  *
- * useSession() no se cubre aqui: es un hook de React y este proyecto corre las
- * pruebas en entorno node, igual que el resto de modulos ligados a la
- * plataforma. Lo que si se cubre es la logica propia del modulo: la traduccion
- * de errores y, sobre todo, la limpieza de datos locales al cerrar sesion.
+ * useSession() vive en useSession.ts, aparte, y no se cubre en ningun lado:
+ * es un hook de React y este proyecto corre las pruebas en entorno node. Este
+ * archivo prueba la logica propia de auth.ts: la traduccion de errores y que
+ * signOut delega la limpieza local al feature de gastos antes de cerrar la
+ * sesion remota. El ORDEN push-antes-de-limpiar y la resiliencia sin red son
+ * propiedad de limpiarAlCerrarSesion() y se prueban en
+ * features/gastos/limpiarAlCerrarSesion.test.ts, no aqui.
  */
 import { signIn, signOut } from './auth';
 
@@ -16,20 +19,17 @@ jest.mock('@/shared/lib/supabase', () => ({
     },
   },
 }));
-jest.mock('@/shared/storage/deviceStorage', () => ({
-  expenseCache: { clear: jest.fn() },
-  syncQueue: { clear: jest.fn() },
+jest.mock('@/features/gastos', () => ({
+  limpiarAlCerrarSesion: jest.fn().mockResolvedValue(undefined),
 }));
-jest.mock('./remote', () => ({ pushQueue: jest.fn().mockResolvedValue(undefined) }));
 
 const { supabase } = jest.requireMock('@/shared/lib/supabase');
-const { expenseCache, syncQueue } = jest.requireMock('@/shared/storage/deviceStorage');
-const { pushQueue } = jest.requireMock('./remote');
+const { limpiarAlCerrarSesion } = jest.requireMock('@/features/gastos');
 
 beforeEach(() => {
   jest.clearAllMocks();
   supabase.auth.signOut.mockResolvedValue({ error: null });
-  pushQueue.mockResolvedValue(undefined);
+  limpiarAlCerrarSesion.mockResolvedValue(undefined);
 });
 
 describe('signIn', () => {
@@ -71,32 +71,24 @@ describe('signIn', () => {
 });
 
 describe('signOut', () => {
-  it('intenta enviar lo pendiente antes de limpiar', async () => {
+  it('limpia los datos locales del feature de gastos antes de cerrar la sesión remota', async () => {
     const orden: string[] = [];
-    pushQueue.mockImplementation(async () => { orden.push('push'); });
-    syncQueue.clear.mockImplementation(() => { orden.push('limpiar-cola'); });
+    limpiarAlCerrarSesion.mockImplementation(async () => {
+      orden.push('limpiar-local');
+    });
+    supabase.auth.signOut.mockImplementation(async () => {
+      orden.push('cerrar-sesion-remota');
+      return { error: null };
+    });
 
     await signOut();
 
-    expect(orden).toEqual(['push', 'limpiar-cola']);
+    expect(orden).toEqual(['limpiar-local', 'cerrar-sesion-remota']);
   });
 
-  it('borra la copia local y la cola del usuario que sale', async () => {
-    await signOut();
-    expect(syncQueue.clear).toHaveBeenCalledTimes(1);
-    expect(expenseCache.clear).toHaveBeenCalledTimes(1);
-    expect(supabase.auth.signOut).toHaveBeenCalledTimes(1);
-  });
-
-  // El caso que importa: si no se limpiara al fallar la red, la siguiente
-  // persona que entrara en el dispositivo veria los gastos de la anterior.
-  it('limpia igual cuando no hay red para enviar lo pendiente', async () => {
-    pushQueue.mockRejectedValue(new Error('sin conexion'));
-
-    await expect(signOut()).resolves.toBeUndefined();
-
-    expect(syncQueue.clear).toHaveBeenCalledTimes(1);
-    expect(expenseCache.clear).toHaveBeenCalledTimes(1);
-    expect(supabase.auth.signOut).toHaveBeenCalledTimes(1);
+  it('propaga si la limpieza local falla, sin cerrar la sesión remota a medias', async () => {
+    limpiarAlCerrarSesion.mockRejectedValue(new Error('fallo inesperado'));
+    await expect(signOut()).rejects.toThrow('fallo inesperado');
+    expect(supabase.auth.signOut).not.toHaveBeenCalled();
   });
 });

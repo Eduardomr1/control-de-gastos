@@ -1,4 +1,4 @@
-import { createExpense, draftOccurredAt, deleteExpense, fetchCategories, fetchExpenses } from './repository.local';
+import { createExpense, draftOccurredAt, deleteExpense, fetchCategories, fetchExpenses } from './expenses.local';
 import { monthKeyOf } from '@/shared/lib/date';
 import type { NewExpenseInput } from '@/types/expense';
 
