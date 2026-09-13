@@ -14,3 +14,5 @@ android/
 
 expo-env.d.ts
 # @end expo-cli
+# Documento de trabajo interno: contexto de sesion, no material de portafolio.
+docs/arquitectura/handoff-claude-code.md

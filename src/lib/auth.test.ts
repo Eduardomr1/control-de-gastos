@@ -8,7 +8,7 @@
  */
 import { signIn, signOut } from './auth';
 
-jest.mock('./supabase', () => ({
+jest.mock('@/shared/lib/supabase', () => ({
   supabase: {
     auth: {
       signInWithPassword: jest.fn(),
@@ -16,14 +16,14 @@ jest.mock('./supabase', () => ({
     },
   },
 }));
-jest.mock('./storage', () => ({
+jest.mock('@/shared/storage/deviceStorage', () => ({
   expenseCache: { clear: jest.fn() },
   syncQueue: { clear: jest.fn() },
 }));
 jest.mock('./remote', () => ({ pushQueue: jest.fn().mockResolvedValue(undefined) }));
 
-const { supabase } = jest.requireMock('./supabase');
-const { expenseCache, syncQueue } = jest.requireMock('./storage');
+const { supabase } = jest.requireMock('@/shared/lib/supabase');
+const { expenseCache, syncQueue } = jest.requireMock('@/shared/storage/deviceStorage');
 const { pushQueue } = jest.requireMock('./remote');
 
 beforeEach(() => {
@@ -42,28 +42,31 @@ describe('signIn', () => {
     });
   });
 
-  it('traduce credenciales invalidas a un mensaje util', async () => {
+  it('traduce credenciales invalidas a un Failure de tipo DatosInvalidos', async () => {
     supabase.auth.signInWithPassword.mockResolvedValue({
       error: { message: 'Invalid login credentials' },
     });
-    await expect(signIn('a@test.com', 'mala')).rejects.toThrow('Correo o contraseña incorrectos');
+    await expect(signIn('a@test.com', 'mala')).rejects.toEqual({
+      tipo: 'DatosInvalidos',
+      motivo: 'credenciales',
+    });
   });
 
-  it('traduce la cuenta sin confirmar', async () => {
+  it('traduce la cuenta sin confirmar a DatosInvalidos con motivo propio', async () => {
     supabase.auth.signInWithPassword.mockResolvedValue({
       error: { message: 'Email not confirmed' },
     });
-    await expect(signIn('a@test.com', 'secreta123')).rejects.toThrow('La cuenta aún no está confirmada');
+    await expect(signIn('a@test.com', 'secreta123')).rejects.toEqual({
+      tipo: 'DatosInvalidos',
+      motivo: 'cuenta_no_confirmada',
+    });
   });
 
-  it('usa un mensaje generico ante un error desconocido', async () => {
+  it('cae a Desconocido ante un error que no reconoce, sin filtrar el mensaje crudo', async () => {
     supabase.auth.signInWithPassword.mockResolvedValue({
       error: { message: 'network layer exploded' },
     });
-    // No se filtra el mensaje crudo de Supabase al usuario final.
-    await expect(signIn('a@test.com', 'secreta123')).rejects.toThrow(
-      'No se pudo iniciar sesión. Revisa tu conexión.'
-    );
+    await expect(signIn('a@test.com', 'secreta123')).rejects.toMatchObject({ tipo: 'Desconocido' });
   });
 });
 

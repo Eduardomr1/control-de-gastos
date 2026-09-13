@@ -8,7 +8,7 @@
  */
 
 import type { Expense } from '@/types/expense';
-import { dedupeQueue } from './sync';
+import { dedupeQueue } from '@/shared/lib/sync-engine';
 
 const KEY = 'sync:queue';
 const CURSOR_KEY = 'sync:cursor';

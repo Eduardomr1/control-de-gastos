@@ -13,6 +13,7 @@ module.exports = {
     // Modulos que solo envuelven dependencias nativas (MMKV, supabase-js): su
     // comportamiento se verifica en E2E, no en unitarias.
     '!src/lib/storage.ts',
+    '!src/lib/db.ts',
     '!src/lib/supabase.ts',
     '!src/lib/remote.ts',
     '!src/lib/repository.remote.ts',

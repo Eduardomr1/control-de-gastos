@@ -70,7 +70,13 @@ module.exports = tseslint.config(
   {
     // money.ts es el único lugar autorizado para redondear: es la frontera
     // donde el dominio convierte a y desde representación decimal.
-    files: ['src/lib/money.ts', 'src/lib/typography.ts'],
+    //
+    // ponytail: glob por nombre en vez de ruta literal. La migración a
+    // Feature-First mueve estos archivos de carpeta; una ruta literal dejaría
+    // de coincidir y la regla se dispararía sobre código que no cambió. El
+    // techo: un futuro src/features/x/money.ts también quedaría exento. Si eso
+    // llega a pasar, estrechar a 'src/shared/**/money.ts'.
+    files: ['**/money.ts', '**/typography.ts', '**/tipografia.ts'],
     rules: { 'no-restricted-properties': 'off' },
   },
   {
@@ -78,7 +84,8 @@ module.exports = tseslint.config(
     // a partir de un instante UTC y el offset guardado, asi que necesita los
     // getters UTC de forma deliberada. Es el unico lugar autorizado, y su
     // correccion esta cubierta por pruebas de ida y vuelta.
-    files: ['src/lib/mappers.ts'],
+    // ponytail: glob por nombre, mismo motivo que el bloque anterior.
+    files: ['**/mappers.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },
   {

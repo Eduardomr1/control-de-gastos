@@ -7,8 +7,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { MMKV } from 'react-native-mmkv';
 
+import { authStorage } from '@/shared/storage/deviceStorage';
 import type { Database } from '@/types/database';
 
 const url = process.env['EXPO_PUBLIC_SUPABASE_URL'];
@@ -21,18 +21,9 @@ if (!url || !anonKey) {
   );
 }
 
-const storage = new MMKV({ id: 'auth' });
-
-/** Adaptador de almacenamiento que espera supabase-js. */
-const mmkvStorage = {
-  getItem: (key: string) => storage.getString(key) ?? null,
-  setItem: (key: string, value: string) => storage.set(key, value),
-  removeItem: (key: string) => storage.delete(key),
-};
-
 export const supabase = createClient<Database>(url, anonKey, {
   auth: {
-    storage: mmkvStorage,
+    storage: authStorage,
     autoRefreshToken: true,
     persistSession: true,
     // React Native no tiene URL bar: no hay sesión que detectar en la URL.
