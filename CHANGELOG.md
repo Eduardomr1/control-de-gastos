@@ -5,6 +5,24 @@ versionado según [SemVer](https://semver.org/lang/es/).
 
 ## [No publicado]
 
+### Cambiado
+- Migración completa a Feature-First (`src/lib/` → `src/features/{gastos,auth,categorias}/` +
+  `src/shared/`), en 5 fases mergeadas por separado. Ver `docs/arquitectura/`.
+- `app/index.tsx`, `app/add.tsx` y `app/login.tsx` reducidos a un reexport de una línea
+- El respaldo local de gastos se unificó en SQLite; antes convivían dos copias
+  (MMKV para el backend remoto, SQLite para el local)
+- `isRemote` se movió de un módulo de gastos a `shared/lib/environment.ts`:
+  no era un concepto de ese feature
+- Design system mínimo: `GTexto`, `GBoton`, `GCampo`, `GAsyncGate`
+- Lint de fronteras: un feature no puede importar la ruta interna de otro,
+  ni `shared/` importar de ningún feature; solo `deviceStorage.ts` importa
+  `react-native-mmkv`
+
+### Corregido
+- BUG-014 — la lista mostraba el mismo error genérico ante cualquier fallo
+  (servidor roto, sesión caída, sin red). Ahora cada causa traduce a un
+  `Failure` tipado y produce una pantalla distinta.
+
 ### Eliminado
 - NativeWind y Tailwind: la app usa `StyleSheet` y ninguna pantalla llevaba `className`
 - Zustand: declarado en el stack y sin una sola importación
