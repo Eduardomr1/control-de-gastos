@@ -1,5 +1,5 @@
 import { createExpense, draftOccurredAt, deleteExpense, fetchCategories, fetchExpenses } from './repository.local';
-import { monthKeyOf } from './date';
+import { monthKeyOf } from '@/shared/lib/date';
 import type { NewExpenseInput } from '@/types/expense';
 
 function input(overrides: Partial<NewExpenseInput> = {}): NewExpenseInput {

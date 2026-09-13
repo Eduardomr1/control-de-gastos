@@ -1,5 +1,5 @@
 import type { Expense } from '@/types/expense';
-import { dedupeQueue, resolveConflict } from './sync';
+import { dedupeQueue, resolveConflict } from './sync-engine';
 
 function expense(overrides: Partial<Expense> = {}): Expense {
   return {

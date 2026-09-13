@@ -473,3 +473,61 @@ políticas del servidor. Cada mecanismo de seguridad del backend necesita su
 contraparte en el cliente, o protege solo la mitad del camino.
 
 **Regresión:** TC-027 — aislamiento entre cuentas
+
+---
+
+## BUG-014 — La lista reporta un error genérico ante cualquier fallo
+
+**Prioridad:** P1 · **Estado:** Cerrado · **Encontrado en:** revisión de código
+
+**Descripción**
+`repository.remote.ts` lanzaba `` `No se pudieron cargar las categorías:
+${error.message}` `` — el mensaje crudo de Postgrest, con un prefijo propio
+pegado encima. La pantalla de lista mostraba el mismo texto, "No se pudieron
+cargar los gastos", para cualquier causa: tabla inexistente, sesión caída, sin
+red. El usuario no podía distinguir un problema del servidor de uno de su
+propia conexión.
+
+**Reproducción**
+1. Con backend remoto configurado, renombrar la tabla `categories` en Supabase
+2. Abrir la app y cargar la lista
+3. Comparar el mensaje mostrado en modo avión
+
+**Esperado:** copy distinto por causa — **Obtenido:** el mismo texto genérico
+en ambos casos
+
+**Causa raíz**
+El repositorio no traducía la excepción cruda a un tipo propio: la construía
+como string y la propagaba tal cual. La pantalla, al no tener más que un string
+o un booleano `isError`, no tenía con qué distinguir causas — el defecto no
+estaba en la UI, estaba en que la capa de datos nunca produjo la información
+que la UI necesitaba para decidir.
+
+Es el mismo antipatrón de prefijos quemados en la capa de repositorio, ya
+identificado como riesgo arquitectónico antes de escribir una sola línea de
+código de esta migración (ver `docs/arquitectura/plan-implementacion-feature-first.md`).
+
+**Corrección**
+Union discriminada `Failure` (`src/shared/errors/failures.ts`) con cinco casos:
+`SinRed`, `SesionExpirada`, `ServidorNoDisponible`, `DatosInvalidos`,
+`Desconocido`. `traducirPostgrest()` y `traducirAuth()` son el único lugar que
+conoce los códigos crudos de Supabase; todo lo demás en la app ve `Failure`.
+`detalleTecnico` viaja en el `Failure` pero nunca se renderiza, solo se loguea.
+
+La pantalla de lista (`app/index.tsx`) ahora distingue: sesión expirada
+redirige a `/login`; sin red muestra la lista local con una franja de aviso;
+servidor no disponible o datos inválidos muestran un mensaje de error real. La
+pantalla de login mapea `DatosInvalidos` a los dos mensajes que antes vivían en
+un `traducirError()` local, ahora movido a `traducirAuth()`.
+
+**Aprendizaje**
+El mismo antipatrón de "prefijos quemados en el repositorio" que existe en
+EasyOrder apareció aquí, en un proyecto sin relación con ese código. No es una
+coincidencia de un desarrollador: es lo que pasa por defecto cuando la capa de
+datos no tiene un contrato de errores propio y cada `throw` improvisa el suyo.
+La regla que lo previene ("los errores se traducen en el repositorio") no es
+específica de ningún proyecto — es la respuesta correcta en cualquier capa que
+hable con un backend.
+
+**Regresión:** `src/shared/errors/traducir.test.ts` — 10 casos, uno por rama de
+`traducirPostgrest` y `traducirAuth`. TC-032 a TC-035 en `docs/test-cases.md`.

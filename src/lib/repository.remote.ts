@@ -8,13 +8,15 @@
 
 import type { Category, Expense, NewExpenseInput } from '@/types/expense';
 import { pullChanges, pushQueue } from './remote';
-import { expenseCache, syncQueue } from './storage';
-import { currentUserId, supabase } from './supabase';
+import { expenseCache, syncQueue } from '@/shared/storage/deviceStorage';
+import { currentUserId, supabase } from '@/shared/lib/supabase';
+import { traducirPostgrest } from '@/shared/errors';
+import type { Failure } from '@/shared/errors';
 import type { CategoryRow } from '@/types/database';
 
 export async function fetchCategories(): Promise<Category[]> {
   const { data, error } = await supabase.from('categories').select('*');
-  if (error) throw new Error(`No se pudieron cargar las categorías: ${error.message}`);
+  if (error) throw traducirPostgrest(error);
 
   // El mismo motivo que en callRpc(): la inferencia de supabase-js resuelve
   // el schema a never con tipos escritos a mano. El cast queda acotado a esta
@@ -28,7 +30,7 @@ export async function fetchCategories(): Promise<Category[]> {
 
 export async function fetchExpenses(): Promise<Expense[]> {
   const userId = await currentUserId();
-  if (!userId) throw new Error('Sesión no iniciada');
+  if (!userId) throw { tipo: 'SesionExpirada' } satisfies Failure;
 
   // La copia local es la fuente de lectura, no la cola: la cola se vacia al
   // confirmarse el envio y dejaria la lista vacia (BUG-012).

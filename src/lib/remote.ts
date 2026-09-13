@@ -7,14 +7,15 @@
  */
 
 import type { Expense } from '@/types/expense';
-import { expenseToRpcArgs, rowToExpense } from './mappers';
-import { reconcile } from './sync';
-import { callRpc } from './supabase';
+import { expenseToRpcArgs, rowToExpense } from '@/shared/lib/mappers';
+import { reconcile } from '@/shared/lib/sync-engine';
+import { callRpc } from '@/shared/lib/supabase';
+import { traducirPostgrest, type Failure } from '@/shared/errors';
 import type { SyncQueue } from './queue';
 
 export interface PushResult {
   readonly acknowledged: string[];
-  readonly failed: { id: string; reason: string }[];
+  readonly failed: { id: string; reason: Failure }[];
 }
 
 /**
@@ -25,13 +26,13 @@ export interface PushResult {
 export async function pushQueue(queue: SyncQueue): Promise<PushResult> {
   const pending = queue.read();
   const acknowledged: string[] = [];
-  const failed: { id: string; reason: string }[] = [];
+  const failed: { id: string; reason: Failure }[] = [];
 
   for (const expense of pending) {
     const { error } = await callRpc('sync_expense', expenseToRpcArgs(expense));
 
     if (error) {
-      failed.push({ id: expense.id, reason: error.message });
+      failed.push({ id: expense.id, reason: traducirPostgrest(error) });
       // Se continúa con los demás: un gasto con categoría inválida no debe
       // bloquear la cola completa.
       continue;
@@ -54,7 +55,7 @@ export async function pullChanges(
   const since = queue.cursor ?? new Date(0).toISOString();
   const { data, error } = await callRpc('pull_changes', { p_since: since });
 
-  if (error) throw new Error(`Fallo al traer cambios: ${error.message}`);
+  if (error) throw traducirPostgrest(error);
 
   const remote = (data ?? []).map(rowToExpense);
   const merged = reconcile(local, remote);

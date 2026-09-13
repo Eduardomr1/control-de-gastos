@@ -1,5 +1,5 @@
 import type { Expense } from '@/types/expense';
-import { reconcile } from './sync';
+import { reconcile } from './sync-engine';
 
 function expense(overrides: Partial<Expense> = {}): Expense {
   return {
