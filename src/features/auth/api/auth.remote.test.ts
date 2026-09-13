@@ -9,7 +9,7 @@
  * propiedad de limpiarAlCerrarSesion() y se prueban en
  * features/gastos/limpiarAlCerrarSesion.test.ts, no aqui.
  */
-import { signIn, signOut } from './auth';
+import { signIn, signOut } from './auth.remote';
 
 jest.mock('@/shared/lib/supabase', () => ({
   supabase: {

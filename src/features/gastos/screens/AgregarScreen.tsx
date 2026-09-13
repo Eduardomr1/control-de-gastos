@@ -1,20 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MoneyError, parseAmount } from '@/shared/lib/money';
 import { typography } from '@/shared/theme/tipografia';
-import { draftOccurredAt, fetchCategories } from '../api';
+import { useCategorias } from '@/features/categorias';
+import { draftOccurredAt } from '../api';
 import { useCrearGasto } from '../hooks/useCrearGasto';
 
 export function AgregarScreen() {
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState<string>('comida');
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: fetchCategories,
-  });
+  const { data: categories = [] } = useCategorias();
   const [error, setError] = useState<string | null>(null);
   const mutation = useCrearGasto();
 

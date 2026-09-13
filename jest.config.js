@@ -5,7 +5,6 @@ module.exports = {
   testMatch: ['**/*.test.ts'],
   moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
   collectCoverageFrom: [
-    'src/lib/**/*.ts',
     'src/shared/**/*.ts',
     'src/features/**/*.ts',
     '!**/*.test.ts',
@@ -21,22 +20,26 @@ module.exports = {
     '!src/features/gastos/store/syncQueueInstance.ts',
     '!src/features/gastos/api/sync.ts',
     '!src/features/gastos/api/expenses.remote.ts',
+    '!src/features/categorias/api/categorias.remote.ts',
     // Barrels que solo reexportan: no tienen lógica propia que romper, y
     // Jest los marca en 0% porque las pruebas importan cada módulo interno
-    // directo, no a través del barrel (que ademas los tests de auth.ts
-    // mockean por completo).
+    // directo, no a través del barrel (y los tests de auth.remote.ts
+    // mockean el barrel de gastos por completo).
     '!src/features/gastos/index.ts',
+    '!src/features/auth/index.ts',
+    '!src/features/categorias/index.ts',
     '!src/shared/ui/index.ts',
     // colores.ts es un objeto de datos sin lógica, y los componentes que lo
     // consumen (GTexto, GBoton, GCampo) no tienen prueba unitaria propia por
-    // la misma razón que auth.test.ts documenta para useSession: dependen de
-    // un entorno de render que este proyecto no monta en Node.
+    // la misma razón que useSession.ts: dependen de un entorno de render que
+    // este proyecto no monta en Node.
     '!src/shared/theme/colores.ts',
     // Hooks de React: useQueries/useMutation/useState+useEffect necesitan un
     // entorno de render (React Testing Library con jest-expo o similar), que
     // este proyecto no tiene. Se verifican en los flujos de .maestro/.
     '!src/features/gastos/hooks/**',
-    '!src/lib/useSession.ts',
+    '!src/features/categorias/hooks/**',
+    '!src/features/auth/hooks/**',
   ],
   coverageThreshold: {
     global: { branches: 80, functions: 90, lines: 90, statements: 90 },

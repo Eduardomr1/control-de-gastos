@@ -1,4 +1,4 @@
-import { createExpense, draftOccurredAt, deleteExpense, fetchCategories, fetchExpenses } from './expenses.local';
+import { createExpense, draftOccurredAt, deleteExpense, fetchExpenses } from './expenses.local';
 import { monthKeyOf } from '@/shared/lib/date';
 import type { NewExpenseInput } from '@/types/expense';
 
@@ -11,14 +11,6 @@ function input(overrides: Partial<NewExpenseInput> = {}): NewExpenseInput {
     ...overrides,
   };
 }
-
-describe('fetchCategories', () => {
-  it('devuelve las categorías disponibles', async () => {
-    const categories = await fetchCategories();
-    expect(categories.length).toBeGreaterThan(0);
-    expect(categories.every((c) => c.id && c.name && c.color)).toBe(true);
-  });
-});
 
 describe('createExpense', () => {
   it('asigna un id generado en el cliente', async () => {

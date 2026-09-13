@@ -10,20 +10,9 @@
  * físico de "todos los gastos conocidos", sin importar cuál backend escribió.
  */
 
-import type { Category, Expense, NewExpenseInput } from '@/types/expense';
+import type { Expense, NewExpenseInput } from '@/types/expense';
 import { nowLocalIso } from '@/shared/lib/date';
 import { expenseCache } from '../store/expenseCache';
-
-const CATEGORIES: Category[] = [
-  { id: 'comida', name: 'Comida', color: '#F97316' },
-  { id: 'transporte', name: 'Transporte', color: '#0EA5E9' },
-  { id: 'hogar', name: 'Hogar', color: '#22C55E' },
-  { id: 'otros', name: 'Otros', color: '#A855F7' },
-];
-
-export async function fetchCategories(): Promise<Category[]> {
-  return CATEGORIES;
-}
 
 export async function fetchExpenses(): Promise<Expense[]> {
   return expenseCache.read().filter((e) => !e.deletedAt);
