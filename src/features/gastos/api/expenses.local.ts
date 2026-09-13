@@ -3,12 +3,16 @@
  *
  * Se usa cuando no hay credenciales de Supabase configuradas, para poder
  * desarrollar y correr la suite completa sin depender de un backend.
- * `repository.ts` elige entre este y el remoto en tiempo de ejecución.
+ * `api/index.ts` elige entre este y el remoto en tiempo de ejecución.
+ *
+ * La persistencia (SQLite en el dispositivo, memoria en Node) vive en
+ * `../store/expenseCache`, compartida con el backend remoto: un solo respaldo
+ * físico de "todos los gastos conocidos", sin importar cuál backend escribió.
  */
 
 import type { Category, Expense, NewExpenseInput } from '@/types/expense';
 import { nowLocalIso } from '@/shared/lib/date';
-import { dedupeQueue } from '@/shared/lib/sync-engine';
+import { expenseCache } from '../store/expenseCache';
 
 const CATEGORIES: Category[] = [
   { id: 'comida', name: 'Comida', color: '#F97316' },
@@ -17,51 +21,12 @@ const CATEGORIES: Category[] = [
   { id: 'otros', name: 'Otros', color: '#A855F7' },
 ];
 
-/**
- * Estado local. En el dispositivo se respalda en SQLite (db.ts), para que los
- * gastos sobrevivan a un reinicio y para poder inspeccionarlos con cualquier
- * cliente SQL; en Node (pruebas) no hay binding nativo y queda en memoria.
- *
- * El require() es perezoso por lo mismo que en repository.ts: un import
- * estatico arrastraria el modulo nativo a cualquier contexto que lo importe,
- * incluidas las pruebas.
- */
-interface Disco {
-  read(): Expense[];
-  write(expenses: readonly Expense[]): void;
-}
-
-let store: Expense[] | null = null;
-let disco: Disco | null | undefined;
-
-function persistencia(): Disco | null {
-  if (disco === undefined) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      disco = (require('./db') as { expenseDb: Disco }).expenseDb;
-    } catch {
-      disco = null;
-    }
-  }
-  return disco;
-}
-
-function leer(): Expense[] {
-  store ??= persistencia()?.read() ?? [];
-  return store;
-}
-
-function guardar(next: Expense[]): void {
-  store = next;
-  persistencia()?.write(next);
-}
-
 export async function fetchCategories(): Promise<Category[]> {
   return CATEGORIES;
 }
 
 export async function fetchExpenses(): Promise<Expense[]> {
-  return leer().filter((e) => !e.deletedAt);
+  return expenseCache.read().filter((e) => !e.deletedAt);
 }
 
 /**
@@ -75,16 +40,16 @@ export async function createExpense(input: NewExpenseInput): Promise<Expense> {
     syncState: 'pending',
     updatedAt: new Date().toISOString(),
   };
-  guardar(dedupeQueue([...leer(), expense]));
+  expenseCache.upsert(expense);
   return expense;
 }
 
 export async function deleteExpense(id: string): Promise<void> {
   const now = new Date().toISOString();
-  guardar(
-    leer().map((e) =>
-      e.id === id ? { ...e, deletedAt: now, updatedAt: now, syncState: 'pending' } : e,
-    ),
+  expenseCache.write(
+    expenseCache
+      .read()
+      .map((e) => (e.id === id ? { ...e, deletedAt: now, updatedAt: now, syncState: 'pending' } : e)),
   );
 }
 

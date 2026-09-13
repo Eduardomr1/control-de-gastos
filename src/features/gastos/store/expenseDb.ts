@@ -5,8 +5,10 @@
  * cualquier cliente SQL (DBeaver) y se consulta como una tabla normal. Esa
  * es toda la razon de existir de este modulo frente al cache en MMKV.
  *
- * La API sincrona de expo-sqlite mantiene la misma forma que ExpenseCache,
- * asi que repository.local.ts no distingue cual de los dos tiene debajo.
+ * La API sincrona coincide con la forma que espera expenseCache.ts (el otro
+ * archivo de esta carpeta): read/write/upsert/clear. Es el respaldo real que
+ * expenseCache usa en el dispositivo; en Node (pruebas) no hay binding nativo
+ * y expenseCache cae a memoria — ver expenseCache.ts.
  */
 
 import * as SQLite from 'expo-sqlite';

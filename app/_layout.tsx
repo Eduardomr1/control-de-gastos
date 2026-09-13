@@ -4,8 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 
-import { useSession } from '@/lib/auth';
-import { isRemote } from '@/lib/repository';
+import { useSession } from '@/lib/useSession';
+import { isRemote } from '@/features/gastos';
 
 const queryClient = new QueryClient({
   defaultOptions: {
