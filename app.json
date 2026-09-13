@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "scheme": "gastos",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "mx.eduardomaytorena.gastos"
