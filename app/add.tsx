@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MoneyError, parseAmount } from '@/lib/money';
+import { MoneyError, parseAmount } from '@/shared/lib/money';
 import { createExpense, draftOccurredAt, fetchCategories } from '@/lib/repository';
-import { typography } from '@/lib/typography';
+import { typography } from '@/shared/theme/tipografia';
 
 export default function AddScreen() {
   const [amount, setAmount] = useState('');

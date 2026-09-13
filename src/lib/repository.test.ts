@@ -12,7 +12,7 @@ import {
   fetchExpenses,
   isRemote,
 } from './repository';
-import { monthKeyOf } from './date';
+import { monthKeyOf } from '@/shared/lib/date';
 
 describe('repository (despachador)', () => {
   it('usa el backend local cuando no hay credenciales', () => {
