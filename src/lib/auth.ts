@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 
 import { supabase } from '@/shared/lib/supabase';
+import { traducirAuth } from '@/shared/errors';
 
 export interface SessionState {
   userId: string | null;
@@ -36,7 +37,7 @@ export function useSession(): SessionState {
 
 export async function signIn(email: string, password: string): Promise<void> {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(traducirError(error.message));
+  if (error) throw traducirAuth(error);
 }
 
 /**
@@ -57,15 +58,4 @@ export async function signOut(): Promise<void> {
   syncQueue.clear();
   expenseCache.clear();
   await supabase.auth.signOut();
-}
-
-/** Los mensajes de Supabase llegan en inglés y no sirven al usuario final. */
-function traducirError(message: string): string {
-  if (message.includes('Invalid login credentials')) {
-    return 'Correo o contraseña incorrectos';
-  }
-  if (message.includes('Email not confirmed')) {
-    return 'La cuenta aún no está confirmada';
-  }
-  return 'No se pudo iniciar sesión. Revisa tu conexión.';
 }
