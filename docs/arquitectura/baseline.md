@@ -170,3 +170,45 @@ corriendo ESLint sobre ambas ubicaciones: exit 0 en las dos.
 5. **BUG-014 sin corregir** — `repository.remote.ts:17` lanza
    `` throw new Error(`No se pudieron cargar las categorías: ${error.message}`) ``.
    Se ataca en la Fase 2.
+
+---
+
+## 7. Cierre — comparación antes / después
+
+Medido al cerrar la Fase 5, sobre `docs/arquitectura/mapa-imports-despues.txt`
+comparado contra este mismo documento (sección 1-4, medidas del commit
+`8d89bf1`, antes de tocar un solo archivo).
+
+| Métrica | Antes (Fase 0) | Después (Fase 5) |
+|---|---|---|
+| Pruebas | 141 (tras sacar los 6 clones ajenos) | **155** |
+| Suites | 9 | 16 |
+| Cobertura global | 95.57% / 88.46% / 91.04% / 95.71% | **98.22% / 92.85% / 93.93% / 98.09%** |
+| Estructura de `src/` | `lib/` (13 módulos planos), `types/` | `features/` (3), `shared/`, `types/` |
+| `src/lib/` | 14 módulos, sin fronteras | **no existe** |
+| Referencias entre módulos | 42 | 99 (más archivos, más aristas — normal en Feature-First) |
+| Referencias perezosas (`require`/`import()`) | 4, todas con cast sin tipos | 3 con cast + 1 `import()` con tipos reales (`limpiarAlCerrarSesion`, vía barrel) |
+| Imports cruzados sin barrel | N/A (no había features) | **0**, verificado por grep y por el lint de fronteras |
+| Errores crudos del backend a la UI | Sí — BUG-014 | **0** — `Failure` tipado, verificado por grep literal |
+| Copias locales de "todos los gastos" | 2 (MMKV + SQLite) | **1** (SQLite, compartida por ambos backends) |
+| Design system | 0 componentes | 4 (`GTexto`, `GBoton`, `GCampo`, `GAsyncGate`) |
+| Líneas de `app/index.tsx` | 217 | **1** (reexport) |
+| Líneas de `app/add.tsx` | 129 | **1** (reexport) |
+| Líneas de `app/login.tsx` | 108 | **1** (reexport) |
+
+**Lo que NO cambió, verificado por las mismas pruebas de antes:** `money.ts`,
+`date.ts` y `sync-engine.ts` (antes `sync.ts`) se movieron de carpeta pero no
+de cuerpo — sus pruebas originales pasan igual desde la nueva ruta, sin haberse
+tocado una sola aserción.
+
+**Deuda de la sección 6, resuelta:**
+1. `auth.ts` al 42.85% de ramas → resuelto: se partió en `signIn`/`signOut`
+   (100%, en `features/auth/api/auth.remote.ts`) y `useSession` (hook,
+   excluido de cobertura por la misma razón que el resto de hooks de React).
+2. `collectCoverageFrom` con rutas quemadas → resuelto en cada fase que movió
+   archivos; se rompió en silencio entre la Fase 1 y la Fase 3 sin que
+   ninguna verificación con `npm test` (sin `--coverage`) lo detectara. Ver
+   el commit de la Fase 3 para el detalle completo.
+3. Doble copia local (MMKV + SQLite) → resuelto: unificada en SQLite.
+4. Supabase apagado → sigue apagado. Fuera del alcance de este plan.
+5. BUG-014 → resuelto en la Fase 2.

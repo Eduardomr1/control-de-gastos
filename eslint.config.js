@@ -92,4 +92,99 @@ module.exports = tseslint.config(
     files: ['**/*.test.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },
+
+  /**
+   * Fronteras de arquitectura (Reglas 1, 2 y 4 de
+   * docs/arquitectura/estructura-archivos.md), más el punto único de contacto
+   * con MMKV. Un feature nunca importa la ruta interna de otro: solo por
+   * dentro de sí mismo, con rutas relativas (por eso estos patrones apuntan a
+   * `@/features/*`, la forma absoluta — nunca coinciden con un `../api`
+   * dentro del propio feature). `shared/` nunca importa de ningún feature.
+   * `app/` solo puede pedir el barrel, nunca una ruta interna.
+   *
+   * Las tres reglas de `no-restricted-imports` de abajo van en un bloque por
+   * ámbito, no repartidas en bloques separados: en flat config, cuando dos
+   * bloques que coinciden con el mismo archivo fijan la misma regla, el
+   * último gana — no se fusionan. Un bloque final de MMKV aplicado a todo
+   * `**\/*.ts` habría borrado silenciosamente estas reglas de frontera para
+   * cualquier archivo dentro de `src/features/` o `src/shared/`.
+   */
+  {
+    files: ['src/features/**/*.ts', 'src/features/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@/features/*/api/**',
+                '@/features/*/store/**',
+                '@/features/*/screens/**',
+                '@/features/*/components/**',
+                '@/features/*/hooks/**',
+              ],
+              message:
+                'Un feature no importa la ruta interna de otro. Usa su barrel: @/features/<nombre> (Regla 2).',
+            },
+          ],
+          paths: [
+            {
+              name: 'react-native-mmkv',
+              message:
+                'react-native-mmkv solo se importa en src/shared/storage/deviceStorage.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/shared/**/*.ts', 'src/shared/**/*.tsx'],
+    ignores: ['src/shared/storage/deviceStorage.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/features/**'],
+              message: 'shared/ nunca importa de un feature (Regla 1).',
+            },
+          ],
+          paths: [
+            {
+              name: 'react-native-mmkv',
+              message:
+                'react-native-mmkv solo se importa en src/shared/storage/deviceStorage.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['app/**/*.ts', 'app/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/features/*/*'],
+              message:
+                'app/ solo importa el barrel del feature (@/features/<nombre>), nunca una ruta interna (Regla 4).',
+            },
+          ],
+          paths: [
+            {
+              name: 'react-native-mmkv',
+              message:
+                'react-native-mmkv solo se importa en src/shared/storage/deviceStorage.ts.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
