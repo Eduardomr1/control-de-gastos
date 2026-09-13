@@ -17,14 +17,51 @@ const CATEGORIES: Category[] = [
   { id: 'otros', name: 'Otros', color: '#A855F7' },
 ];
 
-let store: Expense[] = [];
+/**
+ * Estado local. En el dispositivo se respalda en SQLite (db.ts), para que los
+ * gastos sobrevivan a un reinicio y para poder inspeccionarlos con cualquier
+ * cliente SQL; en Node (pruebas) no hay binding nativo y queda en memoria.
+ *
+ * El require() es perezoso por lo mismo que en repository.ts: un import
+ * estatico arrastraria el modulo nativo a cualquier contexto que lo importe,
+ * incluidas las pruebas.
+ */
+interface Disco {
+  read(): Expense[];
+  write(expenses: readonly Expense[]): void;
+}
+
+let store: Expense[] | null = null;
+let disco: Disco | null | undefined;
+
+function persistencia(): Disco | null {
+  if (disco === undefined) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      disco = (require('./db') as { expenseDb: Disco }).expenseDb;
+    } catch {
+      disco = null;
+    }
+  }
+  return disco;
+}
+
+function leer(): Expense[] {
+  store ??= persistencia()?.read() ?? [];
+  return store;
+}
+
+function guardar(next: Expense[]): void {
+  store = next;
+  persistencia()?.write(next);
+}
 
 export async function fetchCategories(): Promise<Category[]> {
   return CATEGORIES;
 }
 
 export async function fetchExpenses(): Promise<Expense[]> {
-  return store.filter((e) => !e.deletedAt);
+  return leer().filter((e) => !e.deletedAt);
 }
 
 /**
@@ -38,14 +75,16 @@ export async function createExpense(input: NewExpenseInput): Promise<Expense> {
     syncState: 'pending',
     updatedAt: new Date().toISOString(),
   };
-  store = dedupeQueue([...store, expense]);
+  guardar(dedupeQueue([...leer(), expense]));
   return expense;
 }
 
 export async function deleteExpense(id: string): Promise<void> {
   const now = new Date().toISOString();
-  store = store.map((e) =>
-    e.id === id ? { ...e, deletedAt: now, updatedAt: now, syncState: 'pending' } : e,
+  guardar(
+    leer().map((e) =>
+      e.id === id ? { ...e, deletedAt: now, updatedAt: now, syncState: 'pending' } : e,
+    ),
   );
 }
 
