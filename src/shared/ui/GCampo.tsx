@@ -5,7 +5,7 @@ import { GTexto } from './GTexto';
 
 interface GCampoProps extends TextInputProps {
   /** Mensaje de error. Su sola presencia pinta el borde en rojo. */
-  error?: string;
+  error?: string | undefined;
 }
 
 /** Campo de texto con estado de error y color de placeholder del tema. */

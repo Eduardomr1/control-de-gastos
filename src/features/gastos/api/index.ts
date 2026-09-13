@@ -1,5 +1,5 @@
 /**
- * Punto único de acceso a datos para las pantallas.
+ * Punto único de acceso a datos de gastos para las pantallas.
  *
  * Elige el backend en tiempo de ejecución: si hay credenciales de Supabase se
  * usa el remoto, si no el de memoria. Eso permite abrir la app y correr la
@@ -11,19 +11,11 @@
  * importe este archivo, incluidas las pruebas en Node.
  */
 
-import type { Category, Expense, NewExpenseInput } from '@/types/expense';
+import type { Expense, NewExpenseInput } from '@/types/expense';
+import { isRemote } from '@/shared/lib/environment';
 import * as local from './expenses.local';
 
-const hasCredentials = Boolean(
-  process.env['EXPO_PUBLIC_SUPABASE_URL'] &&
-    process.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'],
-);
-
-/** True cuando la app habla con Supabase; false cuando corre en memoria. */
-export const isRemote = hasCredentials;
-
 interface RemoteModule {
-  fetchCategories(): Promise<Category[]>;
   fetchExpenses(): Promise<Expense[]>;
   createExpense(input: NewExpenseInput): Promise<Expense>;
   deleteExpense(id: string): Promise<void>;
@@ -37,11 +29,7 @@ function remote(): RemoteModule {
 }
 
 function backend(): RemoteModule {
-  return hasCredentials ? remote() : local;
-}
-
-export function fetchCategories(): Promise<Category[]> {
-  return backend().fetchCategories();
+  return isRemote ? remote() : local;
 }
 
 export function fetchExpenses(): Promise<Expense[]> {

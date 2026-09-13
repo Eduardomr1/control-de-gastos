@@ -1,29 +1,15 @@
 /**
  * El despachador elige backend segun haya credenciales. Sin ellas debe caer al
  * de memoria sin tocar Supabase: es lo que permite correr esta misma suite y
- * abrir la app sin backend.
+ * abrir la app sin backend. La bandera isRemote en si se prueba en
+ * shared/lib/environment.test.ts, y la consulta de categorías en
+ * features/categorias/api/index.test.ts: ninguna de las dos vive ya aquí.
  */
 
-import {
-  createExpense,
-  deleteExpense,
-  draftOccurredAt,
-  fetchCategories,
-  fetchExpenses,
-  isRemote,
-} from '.';
+import { createExpense, deleteExpense, draftOccurredAt, fetchExpenses } from '.';
 import { monthKeyOf } from '@/shared/lib/date';
 
-describe('repository (despachador)', () => {
-  it('usa el backend local cuando no hay credenciales', () => {
-    expect(isRemote).toBe(false);
-  });
-
-  it('delega la consulta de categorías', async () => {
-    const categories = await fetchCategories();
-    expect(categories.length).toBeGreaterThan(0);
-  });
-
+describe('gastos (despachador)', () => {
   it('delega la creación y la consulta de gastos', async () => {
     const created = await createExpense({
       amountCents: 7500,

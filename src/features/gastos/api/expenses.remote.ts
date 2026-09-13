@@ -6,28 +6,12 @@
  * queda con lo local en vez de dejar la pantalla vacía.
  */
 
-import type { Category, Expense, NewExpenseInput } from '@/types/expense';
+import type { Expense, NewExpenseInput } from '@/types/expense';
 import { pullChanges, pushQueue } from './sync';
 import { expenseCache } from '../store/expenseCache';
 import { syncQueue } from '../store/syncQueueInstance';
-import { currentUserId, supabase } from '@/shared/lib/supabase';
-import { traducirPostgrest } from '@/shared/errors';
+import { currentUserId } from '@/shared/lib/supabase';
 import type { Failure } from '@/shared/errors';
-import type { CategoryRow } from '@/types/database';
-
-export async function fetchCategories(): Promise<Category[]> {
-  const { data, error } = await supabase.from('categories').select('*');
-  if (error) throw traducirPostgrest(error);
-
-  // El mismo motivo que en callRpc(): la inferencia de supabase-js resuelve
-  // el schema a never con tipos escritos a mano. El cast queda acotado a esta
-  // linea y CategoryRow refleja la tabla real.
-  return ((data ?? []) as CategoryRow[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    color: row.color,
-  }));
-}
 
 export async function fetchExpenses(): Promise<Expense[]> {
   const userId = await currentUserId();
