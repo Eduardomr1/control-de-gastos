@@ -4,8 +4,8 @@ App de control de gastos personales para iOS y Android, construida como caso de
 estudio de **desarrollo móvil y aseguramiento de calidad**.
 
 [![CI](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml)
-[![Cobertura](https://img.shields.io/badge/cobertura-99%25-brightgreen)](./coverage)
-[![Tests](https://img.shields.io/badge/tests-134%20passing-brightgreen)](./src/lib)
+[![Cobertura](https://img.shields.io/badge/cobertura-98%25-brightgreen)](./coverage)
+[![Tests](https://img.shields.io/badge/tests-155%20passing-brightgreen)](./src)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2057-000020)](https://expo.dev)
 
 > **El repositorio es el producto.** La app es pequeña a propósito; lo que se
@@ -70,7 +70,7 @@ Todo monto vive como entero de centavos y la conversión a texto ocurre solo en
 los bordes (`parseAmount` / `formatMoney`). `assertCents` rechaza cualquier valor
 no entero que intente entrar al dominio.
 
-→ [`src/lib/money.ts`](./src/lib/money.ts) · [BUG-001](./docs/bug-log.md)
+→ [`src/shared/lib/money.ts`](./src/shared/lib/money.ts) · [BUG-001](./docs/bug-log.md)
 
 ### 2. El periodo se calcula en hora local, no en UTC
 
@@ -81,7 +81,7 @@ febrero. Agrupar por UTC lo saca del corte de enero.
 construir un `Date`. El offset explícito en `occurredAt` es obligatorio: una
 fecha sin zona lanza error en vez de adivinar.
 
-→ [`src/lib/date.ts`](./src/lib/date.ts) · [BUG-002](./docs/bug-log.md)
+→ [`src/shared/lib/date.ts`](./src/shared/lib/date.ts) · [BUG-002](./docs/bug-log.md)
 
 ### 3. El id se genera en el cliente
 
@@ -92,7 +92,7 @@ producen todos el mismo id, así que colapsan en un solo registro.
 Deshabilitar el botón durante el envío atacaba el síntoma; el id de cliente
 ataca la causa.
 
-→ [`src/lib/sync.ts`](./src/lib/sync.ts) · [BUG-003](./docs/bug-log.md)
+→ [`src/shared/lib/sync-engine.ts`](./src/shared/lib/sync-engine.ts) · [BUG-003](./docs/bug-log.md)
 
 ---
 
@@ -124,19 +124,23 @@ servidor implementan el mismo criterio, así que convergen al mismo resultado si
 importar el orden de llegada. Hay pruebas explícitas de idempotencia y de
 independencia del orden.
 
-**Elegir backend.** `repository.ts` decide en tiempo de ejecución: con
-credenciales de Supabase usa el remoto, sin ellas el de memoria. La app abre y
-la suite corre sin backend, y las pantallas nunca saben dónde viven los datos.
+**Elegir backend.** `features/gastos/api/index.ts` decide en tiempo de
+ejecución: con credenciales de Supabase usa el remoto, sin ellas el de
+memoria. La app abre y la suite corre sin backend, y las pantallas nunca
+saben dónde viven los datos.
 
 **Cerrar sesión.** Se intenta enviar lo pendiente, se limpia la copia local y
 después se invalida el token. Row Level Security protege el servidor, pero la
 copia local se lee antes de consultarlo: sin limpiarla, la siguiente cuenta en
 ese dispositivo vería datos ajenos (BUG-013).
 
-**Dónde vive cada cosa.** `queue.ts` no importa MMKV y `sync.ts` no importa
-Supabase: ambos son lógica pura y se prueban en Node sin mocks. Las dependencias
-nativas viven aisladas en `storage.ts` y `supabase.ts`, y son las únicas piezas
-excluidas de la cobertura, verificadas en E2E.
+**Dónde vive cada cosa.** `store/syncQueue.ts` no importa MMKV y
+`shared/lib/sync-engine.ts` no importa Supabase: ambos son lógica pura y se
+prueban en Node sin mocks. Las dependencias nativas viven aisladas en
+`shared/storage/deviceStorage.ts` y `shared/lib/supabase.ts`, y son de las
+pocas piezas excluidas de la cobertura, verificadas en E2E — ver
+[`docs/arquitectura/estructura-archivos.md`](./docs/arquitectura/estructura-archivos.md)
+para el resto del criterio.
 
 ---
 
@@ -144,7 +148,7 @@ excluidas de la cobertura, verificadas en E2E.
 
 | Nivel | Herramienta | Alcance |
 |---|---|---|
-| Unitario | Jest + ts-jest | 134 pruebas, 98% de cobertura en `src/lib` |
+| Unitario | Jest + ts-jest | 155 pruebas, 98% de cobertura en `src/shared` y `src/features` |
 | Integración | RNTL + MSW | Flujos de componente ↔ estado ↔ red |
 | E2E | Maestro | 6 flujos en dispositivo, ejecutados en CI |
 | Metacalidad | [Vigía](https://github.com/eduardo-mr1/vigia) | Verifica que las pruebas verifiquen algo, en cada PR |
@@ -157,7 +161,7 @@ riesgo. La UI se prueba a nivel de flujo, no de píxel.
 
 - [Plan de pruebas](./docs/test-plan.md) — estrategia, riesgos, criterios de entrada y salida
 - [Casos de prueba](./docs/test-cases.md) — casos detallados con su automatización correspondiente
-- [Bitácora de defectos](./docs/bug-log.md) — 6 defectos con causa raíz y prueba de regresión
+- [Bitácora de defectos](./docs/bug-log.md) — 14 defectos con causa raíz y prueba de regresión
 - [Auditoría de accesibilidad](./docs/accessibility-audit.md) — evidencia de Dynamic Type y contraste
 - [Backend](./supabase/README.md) — schema, Row Level Security y sync idempotente
 
@@ -165,18 +169,19 @@ riesgo. La UI se prueba a nivel de flujo, no de píxel.
 
 ## Defectos destacados
 
-Trece defectos encontrados, analizados y cerrados durante el desarrollo. Los tres
+Catorce defectos encontrados, analizados y cerrados durante el desarrollo. Los
 más ilustrativos:
 
 | ID | Defecto | Causa raíz | Prueba de regresión |
 |---|---|---|---|
 | [BUG-002](./docs/bug-log.md) | El gasto de fin de mes cae en el periodo siguiente | Agrupación por mes UTC en vez de mes local | `date.test.ts` |
-| [BUG-003](./docs/bug-log.md) | El doble tap crea dos gastos idénticos | Id asignado en el servidor: dos envíos, dos registros | `sync.test.ts` + `.maestro/02-double-tap.yaml` |
-| [BUG-004](./docs/bug-log.md) | Divergencia permanente con timestamps idénticos | Comparación estricta sin criterio de desempate | `sync.test.ts` |
+| [BUG-003](./docs/bug-log.md) | El doble tap crea dos gastos idénticos | Id asignado en el servidor: dos envíos, dos registros | `sync-engine.test.ts` + `.maestro/02-double-tap.yaml` |
+| [BUG-004](./docs/bug-log.md) | Divergencia permanente con timestamps idénticos | Comparación estricta sin criterio de desempate | `sync-engine.test.ts` |
 | [BUG-007](./docs/bug-log.md) | Botón flotante con dimensión fija | Corrección de BUG-005 no aplicada a controles | Regla de ESLint |
 | [BUG-011](./docs/bug-log.md) | Prueba E2E que pasaba sin verificar nada | `assertNotVisible` sobre un elemento inexistente | Aserción sobre el total, no sobre el elemento |
-| [BUG-012](./docs/bug-log.md) | La lista se vacía tras sincronizar | La cola de salida usada como almacén de lectura | `queue.test.ts` |
+| [BUG-012](./docs/bug-log.md) | La lista se vacía tras sincronizar | La cola de salida usada como almacén de lectura | `expenseCache.test.ts` |
 | [BUG-013](./docs/bug-log.md) | Los gastos de un usuario visibles para el siguiente | La copia local sobrevivía al cierre de sesión | TC-027 |
+| [BUG-014](./docs/bug-log.md) | La lista reporta un error genérico ante cualquier fallo | El repositorio propagaba el mensaje crudo de Postgres | `traducir.test.ts` |
 
 BUG-002 es el más representativo: solo se manifiesta en la última hora del mes,
 pasa desapercibido en pruebas casuales y corrompe todos los reportes mensuales.
@@ -247,35 +252,80 @@ unos 30 minutos, y un job que falla en cada PR no informa nada.
 
 ---
 
+## Arquitectura: Feature-First
+
+El proyecto empezó como una bolsa plana de 14 módulos en `src/lib/` y se migró
+a Feature-First en 5 fases, cada una mergeada por separado, sin romper los
+141 tests originales en ningún punto intermedio. El plan completo, con
+línea base medible y la comparación antes/después, está en
+[`docs/arquitectura/`](./docs/arquitectura/).
+
+Cinco reglas, con lint que las hace cumplir — no solo convención:
+
+1. **Dependencia en un solo sentido.** `app/ → features/ → shared/ → types/`.
+2. **Features aislados.** Un feature nunca importa la ruta interna de otro,
+   solo su barrel.
+3. **Un archivo, una responsabilidad.**
+4. **Barrel por feature.** `api/` y `store/` nunca se filtran fuera.
+5. **Los errores se traducen en la capa de datos.** La UI nunca ve un string
+   crudo del backend — ver `Failure` en [Estrategia de QA](#estrategia-de-qa)
+   y [BUG-014](./docs/bug-log.md).
+
+El hallazgo más caro de la migración no fue arquitectónico: mover `money.ts` y
+compañía fuera de `src/lib/` dejó `collectCoverageFrom` apuntando a una
+carpeta casi vacía, y el umbral de cobertura (90%) se sostuvo dos fases
+enteras por pura coincidencia aritmética sobre un solo archivo. `npm test`
+nunca lo mostró porque no corre con `--coverage`; solo `npm run test:coverage`
+—el que corre en CI— lo hace. El detalle completo está en el commit de la
+Fase 3.
+
+---
+
 ## Estructura
 
+Feature-First: cada dominio vive bajo `src/features/`, con una única puerta de
+salida (`index.ts`) y sin fugas de rutas internas entre features — el lint lo
+hace cumplir, no la convención. El estándar completo, con las cinco reglas no
+negociables, está en
+[`docs/arquitectura/estructura-archivos.md`](./docs/arquitectura/estructura-archivos.md).
+
 ```
-app/                    Rutas de Expo Router
-  _layout.tsx           Providers y configuración de Query
-  index.tsx             Lista y resumen mensual
-  add.tsx               Alta de gasto
+app/                          Rutas de Expo Router — cada una reexporta su feature
+  _layout.tsx                 Providers, Query y AuthGate
+  index.tsx / add.tsx         1 línea: reexport de gastos
+  login.tsx                   1 línea: reexport de auth
 src/
-  lib/
-    money.ts            Aritmética en centavos enteros
-    date.ts             Periodos en hora local
-    sync.ts             Resolución de conflictos, deduplicación y reconciliación
-    queue.ts            Cola de sincronización y copia local (sin nativos)
-    mappers.ts          Traducción dominio ↔ base de datos
-    remote.ts           Push y pull contra Supabase
-    storage.ts          Instancia real de MMKV
-    supabase.ts         Cliente y envoltura tipada de rpc()
-    typography.ts       Escalado de fuente accesible
-    repository.ts       Despachador: elige backend segun credenciales
-    repository.local.ts Backend en memoria, para desarrollo y pruebas
-    repository.remote.ts Backend Supabase con escritura optimista
+  features/
+    gastos/
+      api/                    Backend local/remoto + sincronización con Supabase
+      components/             FilaGasto, TotalDelMes, ListaVacia, EsqueletoLista
+      hooks/                  useGastos (Carga Verdadera), useCrearGasto
+      screens/                ListaScreen, AgregarScreen
+      store/                  Cola de sync (MMKV) + copia local (SQLite)
+      index.ts                Barrel — única puerta de salida
+    auth/
+      api/                    signIn, signOut
+      hooks/                  useSession
+      screens/                LoginScreen
+    categorias/
+      api/                    Mismo patrón de despachador local/remoto que gastos
+      hooks/                  useCategorias
+  shared/
+    ui/                       Design system: GTexto, GBoton, GCampo, GAsyncGate
+    lib/                      money, date, mappers, sync-engine, supabase, environment
+    errors/                   Failure tipado + traducción del error crudo del backend
+    storage/                  Único punto de contacto con MMKV
+    theme/                    Colores y tipografía escalable
   types/
-    expense.ts          Modelo de dominio
-    database.ts         Tipos de las tablas y funciones
+    expense.ts                Modelo de dominio, compartido entre features y shared
+    database.ts               Tipos de las tablas y funciones de Supabase
 supabase/
-  migrations/           Schema, RLS y funciones de sincronización
-docs/                   Plan de pruebas, casos, bitácora, auditoría
-.maestro/               Flujos E2E
-.github/workflows/      Pipeline de CI
+  migrations/                 Schema, RLS y funciones de sincronización
+docs/
+  arquitectura/                Plan de la migración, norma de estructura, línea base
+  test-plan.md, test-cases.md, bug-log.md, accessibility-audit.md
+.maestro/                      Flujos E2E
+.github/workflows/              Pipeline de CI
 ```
 
 ---
