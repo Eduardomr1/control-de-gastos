@@ -10,13 +10,9 @@ import type { Expense } from '@/types/expense';
 import { expenseToRpcArgs, rowToExpense } from '@/shared/lib/mappers';
 import { reconcile } from '@/shared/lib/sync-engine';
 import { callRpc } from '@/shared/lib/supabase';
-import { traducirPostgrest, type Failure } from '@/shared/errors';
-import type { SyncQueue } from './queue';
-
-export interface PushResult {
-  readonly acknowledged: string[];
-  readonly failed: { id: string; reason: Failure }[];
-}
+import { traducirPostgrest } from '@/shared/errors';
+import type { SyncQueue } from '../store/syncQueue';
+import type { PushResult } from '../types';
 
 /**
  * Envía la cola pendiente. Cada gasto viaja por `sync_expense`, que hace
@@ -26,7 +22,7 @@ export interface PushResult {
 export async function pushQueue(queue: SyncQueue): Promise<PushResult> {
   const pending = queue.read();
   const acknowledged: string[] = [];
-  const failed: { id: string; reason: Failure }[] = [];
+  const failed: PushResult['failed'] = [];
 
   for (const expense of pending) {
     const { error } = await callRpc('sync_expense', expenseToRpcArgs(expense));

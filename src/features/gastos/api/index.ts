@@ -6,13 +6,13 @@
  * suite sin backend, y es lo que mantiene a las pantallas ignorantes de dónde
  * viven los datos.
  *
- * `remote.ts` y `supabase.ts` se cargan con require() perezoso a propósito: un
- * import estático arrastraría el binding nativo de MMKV a cualquier contexto
- * que importe este archivo, incluidas las pruebas en Node.
+ * `expenses.remote.ts` se carga con require() perezoso a propósito: un import
+ * estático arrastraría el binding nativo de MMKV a cualquier contexto que
+ * importe este archivo, incluidas las pruebas en Node.
  */
 
 import type { Category, Expense, NewExpenseInput } from '@/types/expense';
-import * as local from './repository.local';
+import * as local from './expenses.local';
 
 const hasCredentials = Boolean(
   process.env['EXPO_PUBLIC_SUPABASE_URL'] &&
@@ -32,7 +32,7 @@ interface RemoteModule {
 let remoteCache: RemoteModule | null = null;
 function remote(): RemoteModule {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  remoteCache ??= require('./repository.remote') as RemoteModule;
+  remoteCache ??= require('./expenses.remote') as RemoteModule;
   return remoteCache;
 }
 
@@ -56,4 +56,4 @@ export function deleteExpense(id: string): Promise<void> {
   return backend().deleteExpense(id);
 }
 
-export { draftOccurredAt } from './repository.local';
+export { draftOccurredAt } from './expenses.local';

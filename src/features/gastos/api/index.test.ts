@@ -11,7 +11,7 @@ import {
   fetchCategories,
   fetchExpenses,
   isRemote,
-} from './repository';
+} from '.';
 import { monthKeyOf } from '@/shared/lib/date';
 
 describe('repository (despachador)', () => {
