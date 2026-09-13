@@ -7,8 +7,8 @@
  */
 
 import type { Category, Expense, NewExpenseInput } from '@/types/expense';
-import { nowLocalIso } from './date';
-import { dedupeQueue } from './sync';
+import { nowLocalIso } from '@/shared/lib/date';
+import { dedupeQueue } from '@/shared/lib/sync-engine';
 
 const CATEGORIES: Category[] = [
   { id: 'comida', name: 'Comida', color: '#F97316' },

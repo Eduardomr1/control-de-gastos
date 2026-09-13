@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { supabase } from './supabase';
+import { supabase } from '@/shared/lib/supabase';
 
 export interface SessionState {
   userId: string | null;
@@ -47,7 +47,7 @@ export async function signIn(email: string, password: string): Promise<void> {
  * borrarlas se intenta enviar lo pendiente, para no perder trabajo por salir.
  */
 export async function signOut(): Promise<void> {
-  const { expenseCache, syncQueue } = await import('./storage');
+  const { expenseCache, syncQueue } = await import('@/shared/storage/deviceStorage');
   const { pushQueue } = await import('./remote');
 
   // Mejor esfuerzo: si no hay red, lo pendiente se pierde al limpiar. Es el

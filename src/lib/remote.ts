@@ -7,9 +7,9 @@
  */
 
 import type { Expense } from '@/types/expense';
-import { expenseToRpcArgs, rowToExpense } from './mappers';
-import { reconcile } from './sync';
-import { callRpc } from './supabase';
+import { expenseToRpcArgs, rowToExpense } from '@/shared/lib/mappers';
+import { reconcile } from '@/shared/lib/sync-engine';
+import { callRpc } from '@/shared/lib/supabase';
 import type { SyncQueue } from './queue';
 
 export interface PushResult {

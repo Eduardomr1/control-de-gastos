@@ -8,8 +8,8 @@
 
 import type { Category, Expense, NewExpenseInput } from '@/types/expense';
 import { pullChanges, pushQueue } from './remote';
-import { expenseCache, syncQueue } from './storage';
-import { currentUserId, supabase } from './supabase';
+import { expenseCache, syncQueue } from '@/shared/storage/deviceStorage';
+import { currentUserId, supabase } from '@/shared/lib/supabase';
 import type { CategoryRow } from '@/types/database';
 
 export async function fetchCategories(): Promise<Category[]> {

@@ -3,9 +3,9 @@ import { Link } from 'expo-router';
 import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { formatMonthKey, groupByMonth, monthKeyOf, nowLocalIso } from '@/lib/date';
-import { formatMoney, sumCents } from '@/lib/money';
-import { controlSize, rowMinHeight, typography } from '@/lib/typography';
+import { formatMonthKey, groupByMonth, monthKeyOf, nowLocalIso } from '@/shared/lib/date';
+import { formatMoney, sumCents } from '@/shared/lib/money';
+import { controlSize, rowMinHeight, typography } from '@/shared/theme/tipografia';
 import { deleteExpense, fetchCategories, fetchExpenses, isRemote } from '@/lib/repository';
 import { signOut } from '@/lib/auth';
 import type { Category, Expense } from '@/types/expense';

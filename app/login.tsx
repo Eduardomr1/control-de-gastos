@@ -4,7 +4,7 @@ import { Pressable, Text, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { signIn } from '@/lib/auth';
-import { typography } from '@/lib/typography';
+import { typography } from '@/shared/theme/tipografia';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');

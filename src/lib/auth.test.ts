@@ -8,7 +8,7 @@
  */
 import { signIn, signOut } from './auth';
 
-jest.mock('./supabase', () => ({
+jest.mock('@/shared/lib/supabase', () => ({
   supabase: {
     auth: {
       signInWithPassword: jest.fn(),
@@ -16,14 +16,14 @@ jest.mock('./supabase', () => ({
     },
   },
 }));
-jest.mock('./storage', () => ({
+jest.mock('@/shared/storage/deviceStorage', () => ({
   expenseCache: { clear: jest.fn() },
   syncQueue: { clear: jest.fn() },
 }));
 jest.mock('./remote', () => ({ pushQueue: jest.fn().mockResolvedValue(undefined) }));
 
-const { supabase } = jest.requireMock('./supabase');
-const { expenseCache, syncQueue } = jest.requireMock('./storage');
+const { supabase } = jest.requireMock('@/shared/lib/supabase');
+const { expenseCache, syncQueue } = jest.requireMock('@/shared/storage/deviceStorage');
 const { pushQueue } = jest.requireMock('./remote');
 
 beforeEach(() => {
