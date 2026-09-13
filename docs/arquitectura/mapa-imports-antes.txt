@@ -1,0 +1,42 @@
+app/_layout.tsx:7  ->  @/lib/auth
+app/_layout.tsx:8  ->  @/lib/repository
+app/add.tsx:7  ->  @/lib/money
+app/add.tsx:8  ->  @/lib/repository
+app/add.tsx:9  ->  @/lib/typography
+app/index.tsx:10  ->  @/lib/auth
+app/index.tsx:11  ->  @/types/expense
+app/index.tsx:6  ->  @/lib/date
+app/index.tsx:7  ->  @/lib/money
+app/index.tsx:8  ->  @/lib/typography
+app/index.tsx:9  ->  @/lib/repository
+app/login.tsx:6  ->  @/lib/auth
+app/login.tsx:7  ->  @/lib/typography
+src/lib/auth.ts:11  ->  ./supabase
+src/lib/auth.ts:50  ->  [PEREZOSO] ./storage
+src/lib/auth.ts:51  ->  [PEREZOSO] ./remote
+src/lib/db.ts:14  ->  @/types/expense
+src/lib/mappers.ts:10  ->  @/types/database
+src/lib/mappers.ts:9  ->  @/types/expense
+src/lib/queue.ts:10  ->  @/types/expense
+src/lib/queue.ts:11  ->  ./sync
+src/lib/remote.ts:10  ->  ./mappers
+src/lib/remote.ts:11  ->  ./sync
+src/lib/remote.ts:12  ->  ./supabase
+src/lib/remote.ts:13  ->  ./queue
+src/lib/remote.ts:9  ->  @/types/expense
+src/lib/repository.local.ts:10  ->  ./date
+src/lib/repository.local.ts:11  ->  ./sync
+src/lib/repository.local.ts:41  ->  [PEREZOSO] ./db
+src/lib/repository.local.ts:9  ->  @/types/expense
+src/lib/repository.remote.ts:10  ->  ./remote
+src/lib/repository.remote.ts:11  ->  ./storage
+src/lib/repository.remote.ts:12  ->  ./supabase
+src/lib/repository.remote.ts:13  ->  @/types/database
+src/lib/repository.remote.ts:9  ->  @/types/expense
+src/lib/repository.ts:14  ->  @/types/expense
+src/lib/repository.ts:15  ->  ./repository.local
+src/lib/repository.ts:35  ->  [PEREZOSO] ./repository.remote
+src/lib/repository.ts:59  ->  ./repository.local
+src/lib/storage.ts:10  ->  ./queue
+src/lib/supabase.ts:12  ->  @/types/database
+src/lib/sync.ts:9  ->  @/types/expense
