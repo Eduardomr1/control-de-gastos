@@ -163,6 +163,46 @@ suite; la columna "Evidencia" indica dónde.
 
 ---
 
+## Suite: Errores tipados (BUG-014)
+
+Cuatro escenarios de fallo, cuatro pantallas distintas. Antes de esta suite,
+los cuatro producían el mismo texto genérico.
+
+### TC-032 — Tabla remota inexistente
+**Prioridad:** P1 · **Automatizado** · `src/shared/errors/traducir.test.ts`
+
+| | |
+|---|---|
+| Precondición | Backend remoto configurado |
+| Pasos | Renombrar temporalmente la tabla `expenses` en Supabase (`alter table expenses rename to expenses_tmp`) y cargar la lista |
+| Resultado esperado | "Hay un problema con el servidor" — nunca el string crudo de Postgres. Revertir el renombrado al terminar. |
+
+### TC-033 — Sin conexión
+**Prioridad:** P1 · **Automatizado** · `src/shared/errors/traducir.test.ts`
+
+| | |
+|---|---|
+| Pasos | Activar modo avión y cargar la lista |
+| Resultado esperado | Se muestran los gastos guardados localmente con la franja "Sin conexión — mostrando datos guardados", no un estado de error |
+
+### TC-034 — Credenciales de login incorrectas
+**Prioridad:** P1 · **Automatizado** · `src/lib/auth.test.ts`
+
+| | |
+|---|---|
+| Pasos | Intentar entrar con correo o contraseña incorrectos |
+| Resultado esperado | "Correo o contraseña incorrectos" — distinto del mensaje de cuenta sin confirmar |
+
+### TC-035 — Sesión cerrada desde el backend
+**Prioridad:** P1 · Manual
+
+| | |
+|---|---|
+| Pasos | Con la app abierta en la lista, cerrar la sesión desde Supabase (Authentication → Users → Sign out) y refrescar |
+| Resultado esperado | Redirección a `/login`, sin mostrar un estado de error mudo primero |
+
+---
+
 ## Suite: Accesibilidad
 
 ### TC-040 — Dynamic Type al 310%

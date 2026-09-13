@@ -4,7 +4,23 @@ import { Pressable, Text, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { signIn } from '@/lib/auth';
+import { esFailure } from '@/shared/errors';
 import { typography } from '@/shared/theme/tipografia';
+
+/** Failure → copy visible. Único lugar que traduce el tipo a texto de UI. */
+function copiaLogin(e: unknown): string {
+  if (!esFailure(e)) return 'No se pudo iniciar sesión. Revisa tu conexión.';
+  switch (e.tipo) {
+    case 'DatosInvalidos':
+      return e.motivo === 'cuenta_no_confirmada'
+        ? 'La cuenta aún no está confirmada'
+        : 'Correo o contraseña incorrectos';
+    case 'SinRed':
+      return 'Sin conexión. Revisa tu red e intenta de nuevo.';
+    default:
+      return 'No se pudo iniciar sesión. Revisa tu conexión.';
+  }
+}
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -19,7 +35,7 @@ export default function LoginScreen() {
       await signIn(email.trim(), password);
       router.replace('/');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo iniciar sesión');
+      setError(copiaLogin(e));
     } finally {
       setBusy(false);
     }

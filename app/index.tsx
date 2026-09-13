@@ -1,5 +1,6 @@
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
+import { useEffect } from 'react';
 import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,6 +9,7 @@ import { formatMoney, sumCents } from '@/shared/lib/money';
 import { controlSize, rowMinHeight, typography } from '@/shared/theme/tipografia';
 import { deleteExpense, fetchCategories, fetchExpenses, isRemote } from '@/lib/repository';
 import { signOut } from '@/lib/auth';
+import { esFailure, type Failure } from '@/shared/errors';
 import type { Category, Expense } from '@/types/expense';
 
 export default function ListScreen() {
@@ -36,16 +38,35 @@ export default function ListScreen() {
   });
 
   const isPending = results.some((r) => r.isPending);
-  const isError = results.some((r) => r.isError);
+  const fallido = results.some((r) => r.isError);
+  const errorCrudo: unknown = results.find((r) => r.isError)?.error;
+  const fallo: Failure = esFailure(errorCrudo) ? errorCrudo : { tipo: 'Desconocido' };
+  const detalleTecnico = 'detalleTecnico' in fallo ? fallo.detalleTecnico : undefined;
+
+  // La sesión expiro a medio uso: redirige a login en vez de mostrar un error
+  // mudo. AuthGate en _layout.tsx cubre la ausencia de sesión al abrir la app;
+  // esto cubre que expire mientras la lista ya está en pantalla.
+  useEffect(() => {
+    if (fallido && fallo.tipo === 'SesionExpirada') router.replace('/login');
+  }, [fallido, fallo.tipo]);
+
+  // detalleTecnico nunca se renderiza, pero tampoco se pierde en silencio.
+  useEffect(() => {
+    if (detalleTecnico) console.error(`[${fallo.tipo}]`, detalleTecnico);
+  }, [fallo.tipo, detalleTecnico]);
 
   if (isPending) return <ScreenSkeleton />;
-  if (isError) return <ErrorState />;
+  if (fallido && fallo.tipo === 'SesionExpirada') return <ScreenSkeleton />;
+  // Servidor roto, datos inválidos o un fallo que no se reconoce: no hay copia
+  // local que mostrar con confianza, así que es un estado de error real.
+  if (fallido && fallo.tipo !== 'SinRed') return <ErrorState failure={fallo} />;
 
   const [expensesResult, categoriesResult] = results;
   const expenses = (expensesResult?.data ?? []) as Expense[];
   const categories = (categoriesResult?.data ?? []) as Category[];
   // La consulta de categorías ya se hacía para el gating de carga; aquí se le
   // da uso: la fila muestra el nombre legible en vez del identificador crudo.
+  // Sin red, categories queda vacía y el nombre cae al id crudo (ver abajo).
   const categoryNames = new Map(categories.map((c) => [c.id, c.name]));
   const visible = expenses.filter((e) => !e.deletedAt);
   const monthExpenses = groupByMonth(visible).get(currentMonth) ?? [];
@@ -53,6 +74,13 @@ export default function ListScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} testID="screen-lista">
+      {fallo.tipo === 'SinRed' ? (
+        <View style={{ padding: 8, backgroundColor: '#FEF3C7' }} testID="aviso-sin-conexion">
+          <Text style={{ ...typography.caption(), color: '#92400E', textAlign: 'center' }}>
+            Sin conexión — mostrando datos guardados
+          </Text>
+        </View>
+      ) : null}
       <View style={{ padding: 16, gap: 4 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text style={{ ...typography.caption(), color: '#6B7280' }}>
@@ -203,15 +231,25 @@ function EmptyState() {
   );
 }
 
-function ErrorState() {
+/** Failure → copy visible. La UI nunca ve el mensaje crudo del backend. */
+function copiaError(failure: Failure): string {
+  switch (failure.tipo) {
+    case 'ServidorNoDisponible':
+      return 'Hay un problema con el servidor';
+    case 'DatosInvalidos':
+      return 'Los datos recibidos no son válidos';
+    default:
+      return 'No se pudieron cargar los gastos';
+  }
+}
+
+function ErrorState({ failure }: { failure: Failure }) {
   return (
     <SafeAreaView
       style={{ flex: 1, padding: 32, backgroundColor: '#FFFFFF' }}
       testID="error-lista"
     >
-      <Text style={{ ...typography.label(), color: '#0B0F14' }}>
-        No se pudieron cargar los gastos
-      </Text>
+      <Text style={{ ...typography.label(), color: '#0B0F14' }}>{copiaError(failure)}</Text>
     </SafeAreaView>
   );
 }
