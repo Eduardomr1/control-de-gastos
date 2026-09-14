@@ -5,7 +5,23 @@ versionado según [SemVer](https://semver.org/lang/es/).
 
 ## [No publicado]
 
+### Agregado
+- La lista agrupa por mes con subtotal por periodo; antes solo era visible el
+  mes en curso
+- Nota opcional al registrar un gasto. El modelo y la columna de SQLite ya la
+  soportaban; faltaba la interfaz
+- Categorías Compras y Salud (migración `0002`)
+
 ### Cambiado
+- Rediseño de las cinco pantallas (Login, Lista, Agregar, estado vacío y estado
+  de carga). Acento Electric Indigo `#5D3FD3`; en la fila el protagonista pasa
+  a ser la categoría, con el monto alineado a la derecha
+- Rampa tipográfica de 3 a 9 variantes, con `tabular-nums` en todo lo que es
+  dinero para que los montos no bailen al cambiar de dígito
+- Las versalitas usan `textTransform` y no `.toUpperCase()` sobre la cadena:
+  así el texto que leen los lectores de pantalla y las pruebas E2E sigue siendo
+  "Total de enero 2026" y no una versión gritada
+- El estado de carga de la lista pasa de bloques grises a un indicador con copy
 - Migración completa a Feature-First (`src/lib/` → `src/features/{gastos,auth,categorias}/` +
   `src/shared/`), en 5 fases mergeadas por separado. Ver `docs/arquitectura/`.
 - `app/index.tsx`, `app/add.tsx` y `app/login.tsx` reducidos a un reexport de una línea
