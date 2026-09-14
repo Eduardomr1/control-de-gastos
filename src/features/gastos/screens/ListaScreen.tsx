@@ -1,12 +1,14 @@
 import { Link, router } from 'expo-router';
 import { useEffect, type ReactNode } from 'react';
-import { Alert, FlatList, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, SectionList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { formatMonthKey } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
-import { controlSize, typography } from '@/shared/theme/tipografia';
+import { colores } from '@/shared/theme/colores';
+import { controlSize } from '@/shared/theme/tipografia';
 import { esFailure, type Failure } from '@/shared/errors';
-import { GAsyncGate } from '@/shared/ui';
+import { GAsyncGate, GTexto } from '@/shared/ui';
 import { signOut } from '@/features/auth';
 import { isRemote } from '@/shared/lib/environment';
 import { useGastos } from '../hooks/useGastos';
@@ -16,7 +18,8 @@ import { ListaVacia } from '../components/ListaVacia';
 import { EsqueletoLista } from '../components/EsqueletoLista';
 
 export function ListaScreen() {
-  const { currentMonth, resultados, gastos, categoryNames, total, eliminar } = useGastos();
+  const { currentMonth, resultados, gastos, secciones, categorias, total, eliminar } =
+    useGastos();
 
   function confirmarEliminar(id: string, label: string) {
     Alert.alert('Eliminar gasto', `¿Eliminar ${label}?`, [
@@ -28,8 +31,9 @@ export function ListaScreen() {
   const contenido = (
     <ContenidoLista
       currentMonth={currentMonth}
-      gastos={gastos}
-      categoryNames={categoryNames}
+      conteo={gastos.length}
+      secciones={secciones}
+      categorias={categorias}
       total={total}
       onSalir={isRemote ? signOut : undefined}
       onEliminar={confirmarEliminar}
@@ -83,9 +87,9 @@ function PantallaDeFallo({
     return (
       <>
         <View style={{ padding: 8, backgroundColor: '#FEF3C7' }} testID="aviso-sin-conexion">
-          <Text style={{ ...typography.caption(), color: '#92400E', textAlign: 'center' }}>
+          <GTexto variante="caption" color="#92400E" style={{ textAlign: 'center' }}>
             Sin conexión — mostrando datos guardados
-          </Text>
+          </GTexto>
         </View>
         {contenidoSinRed}
       </>
@@ -94,10 +98,10 @@ function PantallaDeFallo({
 
   return (
     <SafeAreaView
-      style={{ flex: 1, padding: 32, backgroundColor: '#FFFFFF' }}
+      style={{ flex: 1, padding: 32, backgroundColor: colores.fondo }}
       testID="error-lista"
     >
-      <Text style={{ ...typography.label(), color: '#0B0F14' }}>{copiaError(failure)}</Text>
+      <GTexto variante="titulo">{copiaError(failure)}</GTexto>
     </SafeAreaView>
   );
 }
@@ -116,37 +120,79 @@ function copiaError(failure: Failure): string {
 
 function ContenidoLista({
   currentMonth,
-  gastos,
-  categoryNames,
+  conteo,
+  secciones,
+  categorias,
   total,
   onSalir,
   onEliminar,
 }: {
   currentMonth: string;
-  gastos: ReturnType<typeof useGastos>['gastos'];
-  categoryNames: Map<string, string>;
+  conteo: number;
+  secciones: ReturnType<typeof useGastos>['secciones'];
+  categorias: ReturnType<typeof useGastos>['categorias'];
   total: number;
   onSalir?: (() => void) | undefined;
   onEliminar: (id: string, label: string) => void;
 }) {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} testID="screen-lista">
-      <TotalDelMes currentMonth={currentMonth} totalCents={total} onSalir={onSalir} />
-
-      <FlatList
-        data={gastos}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colores.fondo }}
+      testID="screen-lista"
+    >
+      <SectionList
+        sections={secciones}
         keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => (
-          <FilaGasto
-            expense={item}
-            index={index}
-            categoryName={categoryNames.get(item.categoryId) ?? item.categoryId}
-            onLongPress={() =>
-              onEliminar(item.id, formatMoney(item.amountCents, item.currency))
-            }
+        ListHeaderComponent={
+          <TotalDelMes
+            currentMonth={currentMonth}
+            totalCents={total}
+            conteo={conteo}
+            onSalir={onSalir}
           />
+        }
+        ListEmptyComponent={<ListaVacia mes={formatMonthKey(currentMonth)} />}
+        contentContainerStyle={{ paddingBottom: 120 }}
+        renderSectionHeader={({ section }) => (
+          <GTexto
+            variante="eyebrow"
+            color={colores.textoSecundario}
+            style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 }}
+          >
+            {section.mes === currentMonth
+              ? section.titulo
+              : `${section.titulo} · ${formatMoney(section.subtotal)}`}
+          </GTexto>
         )}
-        ListEmptyComponent={<ListaVacia />}
+        renderItem={({ item, index, section }) => (
+          // El recuadro de la tarjeta se arma por fila: SectionList no envuelve
+          // sus secciones, así que los bordes y el radio viven en los extremos.
+          <View
+            style={{
+              marginHorizontal: 16,
+              backgroundColor: colores.superficie,
+              borderColor: colores.borde,
+              borderLeftWidth: 1,
+              borderRightWidth: 1,
+              borderTopWidth: 1,
+              borderBottomWidth: index === section.data.length - 1 ? 1 : 0,
+              borderTopLeftRadius: index === 0 ? 24 : 0,
+              borderTopRightRadius: index === 0 ? 24 : 0,
+              borderBottomLeftRadius: index === section.data.length - 1 ? 24 : 0,
+              borderBottomRightRadius: index === section.data.length - 1 ? 24 : 0,
+              overflow: 'hidden',
+            }}
+          >
+            <FilaGasto
+              expense={item}
+              index={section.offset + index}
+              categoria={categorias.get(item.categoryId)}
+              onLongPress={() =>
+                onEliminar(item.id, formatMoney(item.amountCents, item.currency))
+              }
+            />
+          </View>
+        )}
       />
 
       <Link href="/add" asChild>
@@ -160,15 +206,21 @@ function ContenidoLista({
             bottom: 32,
             // Escalado con el ajuste de fuente: quien amplía el texto también
             // necesita un objetivo táctil mayor. Ver BUG-007.
-            width: controlSize(56),
-            height: controlSize(56),
-            borderRadius: controlSize(56) / 2,
+            width: controlSize(64),
+            height: controlSize(64),
+            borderRadius: controlSize(64) / 2,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#2563EB',
+            backgroundColor: colores.acento,
+            // El resplandor del diseño. shadowOffset se omite: su valor por
+            // defecto ya es {0,0}, que es justo el halo centrado que se busca.
+            shadowColor: colores.acento,
+            shadowOpacity: 0.4,
+            shadowRadius: 20,
+            elevation: 8,
           }}
         >
-          <Text style={{ color: '#fff', fontSize: 28, lineHeight: 32 }}>+</Text>
+          <Text style={{ color: colores.sobreAcento, fontSize: 28, lineHeight: 32 }}>+</Text>
         </Pressable>
       </Link>
     </SafeAreaView>

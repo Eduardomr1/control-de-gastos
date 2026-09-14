@@ -65,6 +65,27 @@ export function groupByMonth<T extends { occurredAt: string }>(
   return groups;
 }
 
+/**
+ * Etiqueta corta de día, ej. "11 sep". Se lee de los componentes literales del
+ * ISO, nunca de `Date`: pasar por Date normalizaría a UTC y un gasto de las
+ * 23:50 del 31 de enero en Culiacán se mostraría con la fecha del día siguiente.
+ */
+export function formatDayShort(isoWithOffset: string, locale = 'es-MX'): string {
+  const match = ISO_WITH_OFFSET.exec(isoWithOffset);
+  if (!match) {
+    throw new DateError(
+      `Se requiere ISO 8601 con offset explícito, se recibió: "${isoWithOffset}"`,
+    );
+  }
+  const [, year, month, day] = match;
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  const mes = new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    timeZone: 'UTC',
+  }).format(date);
+  return `${Number(day)} ${mes.replace('.', '')}`;
+}
+
 /** Etiqueta legible de un `MonthKey`, ej. "enero 2026". */
 export function formatMonthKey(key: MonthKey, locale = 'es-MX'): string {
   const match = /^(\d{4})-(\d{2})$/.exec(key);

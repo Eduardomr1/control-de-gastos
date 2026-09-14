@@ -1,5 +1,6 @@
 import {
   DateError,
+  formatDayShort,
   formatMonthKey,
   groupByMonth,
   monthKeyOf,
@@ -83,5 +84,24 @@ describe('nowLocalIso', () => {
 
   it('usa la fecha actual cuando no se le pasa una', () => {
     expect(() => monthKeyOf(nowLocalIso())).not.toThrow();
+  });
+});
+
+describe('formatDayShort', () => {
+  // Mismo bug de zona horaria que monthKeyOf, ahora visible en la fila.
+  it('muestra el 31 de enero de un gasto de las 23:50 en Culiacán', () => {
+    const occurredAt = '2026-01-31T23:50:00-07:00';
+    expect(formatDayShort(occurredAt)).toMatch(/^31 /);
+
+    // En UTC ese instante ya es el 1 de febrero.
+    expect(new Date(occurredAt).toISOString().slice(8, 10)).toBe('01');
+  });
+
+  it('no antepone cero al día', () => {
+    expect(formatDayShort('2026-09-05T12:00:00-07:00')).toMatch(/^5 /);
+  });
+
+  it('rechaza un ISO sin offset explícito', () => {
+    expect(() => formatDayShort('2026-09-05T12:00:00')).toThrow(DateError);
   });
 });
