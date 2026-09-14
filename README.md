@@ -5,7 +5,7 @@ estudio de **desarrollo móvil y aseguramiento de calidad**.
 
 [![CI](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml)
 [![Cobertura](https://img.shields.io/badge/cobertura-98%25-brightgreen)](./coverage)
-[![Tests](https://img.shields.io/badge/tests-155%20passing-brightgreen)](./src)
+[![Tests](https://img.shields.io/badge/tests-158%20passing-brightgreen)](./src)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2057-000020)](https://expo.dev)
 
 > **El repositorio es el producto.** La app es pequeña a propósito; lo que se
@@ -148,7 +148,7 @@ para el resto del criterio.
 
 | Nivel | Herramienta | Alcance |
 |---|---|---|
-| Unitario | Jest + ts-jest | 155 pruebas, 98% de cobertura en `src/shared` y `src/features` |
+| Unitario | Jest + ts-jest | 158 pruebas, 98% de cobertura en `src/shared` y `src/features` |
 | Integración | RNTL + MSW | Flujos de componente ↔ estado ↔ red |
 | E2E | Maestro | 6 flujos en dispositivo, ejecutados en CI |
 | Metacalidad | [Vigía](https://github.com/eduardo-mr1/vigia) | Verifica que las pruebas verifiquen algo, en cada PR |
@@ -214,13 +214,16 @@ regla elimina la clase completa.
 Dos reglas aplicadas desde el primer commit, no añadidas al final:
 
 **Dynamic Type.** Ningún contenedor de texto usa `height` fija; todos usan
-`minHeight`. La tipografía deriva de `PixelRatio.getFontScale()`, con tope solo
-en el monto para que no desplace al resto de la fila. Verificado al 100%, 200% y
-310%.
+`minHeight`, y una regla de lint impide lo contrario. La tipografía deriva de
+`PixelRatio.getFontScale()`. El texto corrido escala sin límite; los montos y
+las formas decorativas escalan con tope, porque sin él un total de 34pt ocupa
+la pantalla entera al 300%. Las filas reflúyen con `flexWrap`: al ampliar la
+fuente el monto baja a su propio renglón en vez de recortarse.
 
 **Carga Verdadera.** Ninguna pantalla renderiza contenido parcial. Las consultas
-se agrupan con `useQueries` y se muestra un skeleton único hasta que todas las
-promesas están cumplidas. Sin spinners en cascada ni saltos de layout.
+de una pantalla se evalúan en conjunto con `GAsyncGate`, que muestra un único
+estado de carga hasta que todas las promesas están cumplidas. Sin spinners en
+cascada ni saltos de layout.
 
 ---
 
