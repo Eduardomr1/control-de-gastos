@@ -25,16 +25,17 @@ export function GBoton({ label, busy = false, disabled, onPress, ...props }: GBo
       disabled={inactivo}
       onPress={onPress}
       style={{
-        minHeight: controlSize(44),
+        minHeight: controlSize(52),
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 8,
-        paddingHorizontal: 16,
+        borderRadius: 999,
+        paddingHorizontal: 24,
+        paddingVertical: 14,
         backgroundColor: inactivo ? colores.acentoDeshabilitado : colores.acento,
       }}
       {...props}
     >
-      <GTexto variante="label" color={colores.fondo}>
+      <GTexto variante="label" color={colores.sobreAcento} style={{ fontWeight: '600' }}>
         {label}
       </GTexto>
     </Pressable>

@@ -8,10 +8,14 @@
 
 import type { Category } from '@/types/expense';
 
+// El orden es el que se muestra en los chips de Agregar; "Otros" va al final
+// por ser el cajón de sastre. Debe coincidir con supabase/migrations.
 const CATEGORIES: Category[] = [
   { id: 'comida', name: 'Comida', color: '#F97316' },
   { id: 'transporte', name: 'Transporte', color: '#0EA5E9' },
   { id: 'hogar', name: 'Hogar', color: '#22C55E' },
+  { id: 'compras', name: 'Compras', color: '#EC4899' },
+  { id: 'salud', name: 'Salud', color: '#14B8A6' },
   { id: 'otros', name: 'Otros', color: '#A855F7' },
 ];
 
