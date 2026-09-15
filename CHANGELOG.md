@@ -13,6 +13,10 @@ versionado según [SemVer](https://semver.org/lang/es/).
 - Categorías Compras y Salud (migración `0002`)
 
 ### Cambiado
+- El esquema de SQLite se versiona con `user_version` y aplica migraciones al
+  abrir la app. Antes era un `create table if not exists` suelto, que es mudo
+  ante una tabla ya existente: la primera columna que se agregara nunca habría
+  llegado a los dispositivos con la app ya instalada
 - Rediseño de las cinco pantallas (Login, Lista, Agregar, estado vacío y estado
   de carga). Acento Electric Indigo `#5D3FD3`; en la fila el protagonista pasa
   a ser la categoría, con el monto alineado a la derecha
