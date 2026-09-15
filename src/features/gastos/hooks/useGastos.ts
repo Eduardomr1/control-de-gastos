@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { formatMonthKey, groupByMonth, monthKeyOf, nowLocalIso } from '@/shared/lib/date';
-import { sumCents } from '@/shared/lib/money';
+import { monthKeyOf, nowLocalIso } from '@/shared/lib/date';
 import { useCategorias } from '@/features/categorias';
 import { deleteExpense, fetchExpenses } from '../api';
+import { agruparEnSecciones } from '../secciones';
 import type { Category, Expense } from '@/types/expense';
 
 /**
@@ -36,30 +36,11 @@ export function useGastos() {
   // da uso: la fila muestra nombre y color en vez del identificador crudo.
   // Sin red, el mapa queda vacío y la fila cae al id.
   const categorias = new Map(categories.map((c) => [c.id, c]));
-  const visible = expenses.filter((e) => !e.deletedAt);
-  const porMes = groupByMonth(visible);
-
   // La lista muestra todos los meses; el encabezado, solo el mes en curso.
-  // `offset` acumula las filas de las secciones previas: el índice que da
-  // SectionList reinicia en cada sección, y sin esto dos filas de meses
-  // distintos compartirían el mismo testID.
-  let offset = 0;
-  const secciones = [...porMes.entries()]
-    .sort(([a], [b]) => b.localeCompare(a))
-    .map(([mes, gastosDelMes]) => {
-      const seccion = {
-        mes,
-        titulo: formatMonthKey(mes),
-        subtotal: sumCents(gastosDelMes.map((e) => e.amountCents)),
-        offset,
-        data: [...gastosDelMes].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)),
-      };
-      offset += gastosDelMes.length;
-      return seccion;
-    });
-
-  const gastos = porMes.get(currentMonth) ?? [];
-  const total = sumCents(gastos.map((e) => e.amountCents));
+  const secciones = agruparEnSecciones(expenses.filter((e) => !e.deletedAt));
+  const delMes = secciones.find((s) => s.mes === currentMonth);
+  const gastos = delMes?.data ?? [];
+  const total = delMes?.subtotal ?? 0;
 
   return {
     currentMonth,
