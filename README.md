@@ -102,13 +102,18 @@ Es la parte con más superficie de error del proyecto, así que está construida
 para que cada pieza sea verificable por separado.
 
 **Escribir.** Un gasto nuevo recibe su UUID en el cliente y entra a dos sitios en
-MMKV: la **cola** (lo que falta enviar) y la **copia local** (lo que se lee). La
-escritura es síncrona, así que ambas están en disco antes de que la pantalla se
-cierre: matar la app no pierde el gasto.
+disco: la **cola** en MMKV (lo que falta enviar) y la **copia local** en SQLite
+(lo que se lee). La escritura es síncrona, así que ambas están en disco antes de
+que la pantalla se cierre: matar la app no pierde el gasto.
 
 Son estructuras distintas a propósito. La cola se vacía cuando el servidor
 confirma; usarla como fuente de lectura deja la lista vacía justo cuando la
 sincronización funciona (BUG-012).
+
+La copia local es una tabla `gastos` con una fila por gasto, no un blob JSON:
+`gastos.db` se abre con cualquier cliente SQL y se consulta como una tabla
+normal. El esquema se versiona con `user_version` y las migraciones se aplican
+al abrir la app, cada una con su bump de versión en la misma transacción.
 
 **Empujar.** Cada elemento de la cola viaja por `sync_expense`, una función de
 Postgres que hace upsert con last-write-wins. Reenviar el mismo id no duplica y
