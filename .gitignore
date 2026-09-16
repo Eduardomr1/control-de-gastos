@@ -2,6 +2,9 @@ node_modules/
 .expo/
 dist/
 coverage/
+# Copias de la base traidas del emulador con `npm run db:pull`. Son datos de
+# dispositivo, no del proyecto.
+.local/
 *.log
 .env*
 !.env.example
