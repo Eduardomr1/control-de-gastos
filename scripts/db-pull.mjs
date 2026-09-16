@@ -8,21 +8,42 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const PAQUETE = 'mx.eduardomaytorena.gastos';
 const ORIGEN = 'files/SQLite';
 const DESTINO = '.local';
+const BIN = process.platform === 'win32' ? 'adb.exe' : 'adb';
 
 // La base de un mes de gastos personales pesa kilobytes, pero el default de
 // execFileSync es 1 MB y truncaria en silencio una que creciera.
 const TOPE_BUFFER = 256 * 1024 * 1024;
 
+/**
+ * Ubica adb sin depender del PATH: Android Studio instala platform-tools pero
+ * no lo agrega, asi que exigir el PATH falla en una instalacion normal.
+ * Si nada aparece en las rutas conocidas, se deja que lo resuelva el PATH.
+ */
+function ubicarAdb() {
+  const sdk = process.env.ANDROID_HOME ?? process.env.ANDROID_SDK_ROOT;
+  const candidatos = [
+    sdk && join(sdk, 'platform-tools', BIN),
+    process.env.LOCALAPPDATA &&
+      join(process.env.LOCALAPPDATA, 'Android', 'Sdk', 'platform-tools', BIN),
+    process.env.HOME && join(process.env.HOME, 'Library', 'Android', 'sdk', 'platform-tools', BIN),
+    process.env.HOME && join(process.env.HOME, 'Android', 'Sdk', 'platform-tools', BIN),
+  ].filter(Boolean);
+
+  return candidatos.find((ruta) => existsSync(ruta)) ?? BIN;
+}
+
+const ADB = ubicarAdb();
+
 /** Corre adb y devuelve stdout crudo. Con `opcional`, un fallo devuelve null. */
 function adb(args, opcional = false) {
   try {
-    return execFileSync('adb', args, { maxBuffer: TOPE_BUFFER });
+    return execFileSync(ADB, args, { maxBuffer: TOPE_BUFFER });
   } catch (error) {
     if (opcional) return null;
     throw error;
@@ -36,9 +57,14 @@ function fallar(mensaje) {
 
 let dispositivos = '';
 try {
-  dispositivos = execFileSync('adb', ['devices'], { encoding: 'utf8' });
+  dispositivos = execFileSync(ADB, ['devices'], { encoding: 'utf8' });
 } catch {
-  fallar('No encuentro adb. Agrega platform-tools del Android SDK al PATH.');
+  fallar(
+    'No encuentro adb. Lo busque en ANDROID_HOME, ANDROID_SDK_ROOT, la ruta\n' +
+      '  default del SDK y el PATH.\n\n' +
+      '  Si tienes Android Studio, apunta ANDROID_HOME a tu SDK\n' +
+      '  (Settings > Languages & Frameworks > Android SDK muestra la ruta).',
+  );
 }
 
 // La primera linea es el encabezado "List of devices attached".
