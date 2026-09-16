@@ -9,6 +9,11 @@
  * archivo de esta carpeta): read/write/upsert/clear. Es el respaldo real que
  * expenseCache usa en el dispositivo; en Node (pruebas) no hay binding nativo
  * y expenseCache cae a memoria — ver expenseCache.ts.
+ *
+ * El esquema se versiona con `user_version` (ver MIGRACIONES). Un
+ * `create table if not exists` suelto no basta: es mudo ante una tabla que ya
+ * existe, asi que la primera columna que se agregara nunca llegaria a los
+ * dispositivos que ya abrieron la app.
  */
 
 import * as SQLite from 'expo-sqlite';
@@ -29,21 +34,57 @@ interface Fila {
 
 const db = SQLite.openDatabaseSync('gastos.db');
 
-// El esquema se crea al importar el modulo: sin migraciones todavia porque
-// solo hay una tabla y una version. Cuando haya una segunda, toca user_version.
-db.execSync(`
-  create table if not exists gastos (
-    id            text primary key not null,
-    amount_cents  integer not null,
-    currency      text not null,
-    category_id   text not null,
-    occurred_at   text not null,
-    note          text,
-    sync_state    text not null,
-    updated_at    text not null,
-    deleted_at    text
-  );
-`);
+/**
+ * Migraciones en orden. Agregar una es empujar al final del arreglo; nunca
+ * editar ni reordenar las que ya estan, porque los dispositivos que las
+ * aplicaron no vuelven a ejecutarlas.
+ *
+ * El indice+1 de cada entrada es su `user_version`, asi que el largo del
+ * arreglo es siempre la version esperada del esquema.
+ */
+const MIGRACIONES: readonly string[] = [
+  // 1 — esquema inicial.
+  //
+  // `if not exists` no sobra aunque haya migraciones: las instalaciones
+  // anteriores a este commit ya tienen la tabla pero user_version en 0, asi
+  // que esta migracion les corre igual. Sin el `if not exists` tronarian al
+  // abrir la app.
+  `create table if not exists gastos (
+     id            text primary key not null,
+     amount_cents  integer not null,
+     currency      text not null,
+     category_id   text not null,
+     occurred_at   text not null,
+     note          text,
+     sync_state    text not null,
+     updated_at    text not null,
+     deleted_at    text
+   );`,
+];
+
+/**
+ * Lleva el esquema a la ultima version al importar el modulo.
+ *
+ * Cada migracion va con su bump de version en la misma transaccion: si el
+ * proceso muere a media aplicacion, o quedo entera o no quedo, y al reabrir
+ * se reintenta desde donde iba en vez de saltarsela.
+ */
+function migrar(): void {
+  const fila = db.getFirstSync<{ user_version: number }>('pragma user_version');
+  const actual = fila?.user_version ?? 0;
+
+  MIGRACIONES.slice(actual).forEach((sql, i) => {
+    const version = actual + i + 1;
+    db.withTransactionSync(() => {
+      db.execSync(sql);
+      // pragma no admite parametros vinculados. `version` es aritmetica sobre
+      // el largo del arreglo, nunca entrada del usuario.
+      db.execSync(`pragma user_version = ${version}`);
+    });
+  });
+}
+
+migrar();
 
 function aExpense(fila: Fila): Expense {
   return {
