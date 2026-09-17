@@ -8,7 +8,7 @@ import { traducirPostgrest } from '@/shared/errors';
 import type { CategoryRow } from '@/types/database';
 
 export async function fetchCategories(): Promise<Category[]> {
-  const { data, error } = await supabase.from('categories').select('*');
+  const { data, error } = await supabase().from('categories').select('*');
   if (error) throw traducirPostgrest(error);
 
   // El mismo motivo que en callRpc(): la inferencia de supabase-js resuelve

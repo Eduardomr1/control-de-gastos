@@ -11,19 +11,24 @@
  */
 import { signIn, signOut } from './auth.remote';
 
-jest.mock('@/shared/lib/supabase', () => ({
-  supabase: {
+// El modulo exporta una FUNCION que devuelve el cliente, no el cliente: se
+// construye perezosamente para que importarlo sin credenciales no truene.
+// Ver BUG-015. El cliente se define dentro de la fabrica porque jest.mock se
+// iza por encima de cualquier declaracion de este archivo.
+jest.mock('@/shared/lib/supabase', () => {
+  const cliente = {
     auth: {
       signInWithPassword: jest.fn(),
       signOut: jest.fn().mockResolvedValue({ error: null }),
     },
-  },
-}));
+  };
+  return { supabase: () => cliente };
+});
 jest.mock('@/features/gastos', () => ({
   limpiarAlCerrarSesion: jest.fn().mockResolvedValue(undefined),
 }));
 
-const { supabase } = jest.requireMock('@/shared/lib/supabase');
+const supabase = jest.requireMock('@/shared/lib/supabase').supabase();
 const { limpiarAlCerrarSesion } = jest.requireMock('@/features/gastos');
 
 beforeEach(() => {

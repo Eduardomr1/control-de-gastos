@@ -35,6 +35,9 @@ versionado según [SemVer](https://semver.org/lang/es/).
   `react-native-mmkv`
 
 ### Corregido
+- BUG-015 — la app no arrancaba sin credenciales de Supabase, pese a que el
+  modo local no las necesita. El cliente se construía al evaluar el módulo, así
+  que el fallo ocurría antes de que `isRemote` pudiera elegir backend.
 - BUG-014 — la lista mostraba el mismo error genérico ante cualquier fallo
   (servidor roto, sesión caída, sin red). Ahora cada causa traduce a un
   `Failure` tipado y produce una pantalla distinta.

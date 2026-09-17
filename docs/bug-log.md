@@ -21,6 +21,8 @@ raíz y la prueba de regresión que impide que vuelvan.
 | BUG-011 | Flujos E2E apuntando a elementos que la app no tiene | P2 | Cerrado |
 | BUG-012 | La lista se vacía tras la primera sincronización exitosa | P1 | Cerrado |
 | BUG-013 | Los gastos quedan en el dispositivo al cerrar sesión | P1 | Cerrado |
+| BUG-014 | La lista reporta un error genérico ante cualquier fallo | P1 | Cerrado |
+| BUG-015 | La app no arranca sin credenciales de Supabase | P1 | Cerrado |
 
 ---
 
@@ -531,3 +533,68 @@ hable con un backend.
 
 **Regresión:** `src/shared/errors/traducir.test.ts` — 10 casos, uno por rama de
 `traducirPostgrest` y `traducirAuth`. TC-032 a TC-035 en `docs/test-cases.md`.
+
+---
+
+## BUG-015 — La app no arranca sin credenciales de Supabase
+
+**Prioridad:** P1 · **Estado:** Cerrado · **Encontrado en:** ejecución en emulador
+
+**Descripción**
+Con el proyecto en modo local (sin `.env`), la app no llegaba a renderizar nada:
+pantalla roja con "Faltan EXPO_PUBLIC_SUPABASE_URL o
+EXPO_PUBLIC_SUPABASE_ANON_KEY". El README promete lo contrario —"La app abre y
+la suite corre sin backend"— y la suite estaba entera en verde, porque ninguna
+prueba evalúa la cadena de importación con la que arranca la app.
+
+**Reproducción**
+1. Borrar `.env` (o no crearlo nunca)
+2. `npm run android`
+3. La app compila, instala y bundlea; truena al evaluar `app/_layout.tsx`
+
+**Causa raíz**
+Dos capas, y arreglar solo una dejaba el defecto vivo.
+
+`shared/lib/supabase.ts` construía el cliente en el cuerpo del módulo y lanzaba
+ahí mismo si faltaban credenciales. La cadena `app/_layout.tsx` →
+`@/features/auth` → `LoginScreen` → `auth.remote` → `supabase` es estática, así
+que importar el barrel de auth bastaba para tronar. `isRemote` nunca alcanzaba a
+decidir nada: el throw ocurría durante la evaluación del módulo, antes de que
+existiera cualquier rama de tiempo de ejecución.
+
+Debajo, `useSession` llamaba a `getSession()` sin condición. Aunque el cliente
+se volviera perezoso, la app reventaba igual al renderizar `AuthGate`.
+
+Los `WARN Route ... is missing the required default export` y el
+`Cannot read property 'ErrorBoundary' of undefined` que acompañaban al error
+eran consecuencia, no causas: los módulos de ruta nunca terminaban de evaluarse,
+así que sus exports quedaban en `undefined`.
+
+**Corrección**
+`supabase.ts` expone una función con cliente memoizado en vez de una constante.
+Importar el módulo es inofensivo; el throw solo ocurre si alguien pide el
+cliente de verdad. Es el mismo patrón de carga perezosa que `expenseCache.ts` ya
+usaba con `expenseDb`, y por el mismo motivo: aislar una dependencia que no
+existe en todos los entornos.
+
+`useSession` no consulta Supabase cuando `isRemote` es falso, y arranca con
+`loading: false`. Ese detalle es parte del arreglo y no cosmética: con
+`loading: true` inicial, `AuthGate` se quedaría esperando para siempre una
+respuesta que nadie iba a dar.
+
+**Aprendizaje**
+Un despachador de backend en tiempo de ejecución no sirve de nada si la
+importación del módulo ya decidió por él. El proyecto tenía el patrón correcto
+—carga perezosa— aplicado en gastos y categorías; auth se quedó fuera por ser el
+único feature cuya pantalla importa su capa remota de forma estática. La
+excepción a una convención es donde vive el bug.
+
+Y la suite en verde no dijo nada de un crash de arranque, porque ninguna prueba
+importa la cadena real. Una suite que nunca ejecuta el punto de entrada no
+responde la pregunta "¿abre la app?". Es el mismo hueco que Vigía busca: la
+diferencia entre pruebas que pasan y pruebas que verifican.
+
+**Regresión:** `src/shared/lib/supabase.test.ts` — 4 casos: importar sin
+credenciales no lanza, pedir el cliente sin credenciales sí lanza, devuelve el
+cliente cuando las hay, y memoiza entre llamadas. El primero es el que fallaba
+antes de esta corrección.
