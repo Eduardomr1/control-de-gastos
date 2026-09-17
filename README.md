@@ -5,7 +5,7 @@ estudio de **desarrollo móvil y aseguramiento de calidad**.
 
 [![CI](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml)
 [![Cobertura](https://img.shields.io/badge/cobertura-98%25-brightgreen)](./coverage)
-[![Tests](https://img.shields.io/badge/tests-164%20passing-brightgreen)](./src)
+[![Tests](https://img.shields.io/badge/tests-168%20passing-brightgreen)](./src)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2057-000020)](https://expo.dev)
 
 > **El repositorio es el producto.** La app es pequeña a propósito; lo que se
@@ -148,7 +148,7 @@ para el resto del criterio.
 
 | Nivel | Herramienta | Alcance |
 |---|---|---|
-| Unitario | Jest + ts-jest | 164 pruebas, 98% de cobertura en `src/shared` y `src/features` |
+| Unitario | Jest + ts-jest | 168 pruebas, 98% de cobertura en `src/shared` y `src/features` |
 | Integración | RNTL + MSW | Flujos de componente ↔ estado ↔ red |
 | E2E | Maestro | 6 flujos en dispositivo, ejecutados en CI |
 | Metacalidad | [Vigía](https://github.com/eduardo-mr1/vigia) | Verifica que las pruebas verifiquen algo, en cada PR |

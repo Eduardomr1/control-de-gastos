@@ -11,18 +11,29 @@
 
 import { useEffect, useState } from 'react';
 
+import { isRemote } from '@/shared/lib/environment';
 import { supabase } from '@/shared/lib/supabase';
 import type { SessionState } from '../types';
 
 export function useSession(): SessionState {
-  const [state, setState] = useState<SessionState>({ userId: null, loading: true });
+  // Sin backend no hay sesión que consultar, y `loading` arranca en false: si
+  // arrancara en true, AuthGate se quedaría esperando para siempre una
+  // respuesta que nadie va a dar. Ver BUG-015.
+  const [state, setState] = useState<SessionState>({
+    userId: null,
+    loading: isRemote,
+  });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setState({ userId: data.session?.user.id ?? null, loading: false });
-    });
+    if (!isRemote) return;
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    supabase()
+      .auth.getSession()
+      .then(({ data }) => {
+        setState({ userId: data.session?.user.id ?? null, loading: false });
+      });
+
+    const { data: sub } = supabase().auth.onAuthStateChange((_event, session) => {
       setState({ userId: session?.user.id ?? null, loading: false });
     });
 
