@@ -6,33 +6,51 @@
  * medio guardar. Es el mismo motivo por el que la cola de sync usa MMKV.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import { authStorage } from '@/shared/storage/deviceStorage';
 import type { Database } from '@/types/database';
 
-const url = process.env['EXPO_PUBLIC_SUPABASE_URL'];
-const anonKey = process.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'];
+let cliente: SupabaseClient<Database> | null = null;
 
-if (!url || !anonKey) {
-  throw new Error(
-    'Faltan EXPO_PUBLIC_SUPABASE_URL o EXPO_PUBLIC_SUPABASE_ANON_KEY. ' +
-      'Copia .env.example a .env y llena los valores del panel de Supabase.',
-  );
+function crearCliente(): SupabaseClient<Database> {
+  const url = process.env['EXPO_PUBLIC_SUPABASE_URL'];
+  const anonKey = process.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'];
+
+  if (!url || !anonKey) {
+    throw new Error(
+      'Faltan EXPO_PUBLIC_SUPABASE_URL o EXPO_PUBLIC_SUPABASE_ANON_KEY. ' +
+        'Copia .env.example a .env y llena los valores del panel de Supabase.',
+    );
+  }
+
+  return createClient<Database>(url, anonKey, {
+    auth: {
+      storage: authStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      // React Native no tiene URL bar: no hay sesión que detectar en la URL.
+      detectSessionInUrl: false,
+    },
+  });
 }
 
-export const supabase = createClient<Database>(url, anonKey, {
-  auth: {
-    storage: authStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    // React Native no tiene URL bar: no hay sesión que detectar en la URL.
-    detectSessionInUrl: false,
-  },
-});
+/**
+ * Cliente perezoso, no una constante de módulo.
+ *
+ * Construirlo al importar hacía que la app en modo local tronara solo por
+ * importar el barrel de auth: el `throw` por credenciales ausentes ocurría
+ * durante la evaluación del módulo, antes de que `isRemote` pudiera decidir
+ * nada. Es el mismo motivo por el que `expenseCache` carga `expenseDb` con un
+ * `require()` perezoso. Ver BUG-015.
+ */
+export function supabase(): SupabaseClient<Database> {
+  cliente ??= crearCliente();
+  return cliente;
+}
 
 export async function currentUserId(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await supabase().auth.getSession();
   return data.session?.user.id ?? null;
 }
 
@@ -57,7 +75,7 @@ export async function callRpc<
   data: Database['public']['Functions'][Fn]['Returns'] | null;
   error: { message: string } | null;
 }> {
-  const client = supabase as unknown as {
+  const client = supabase() as unknown as {
     rpc: (
       name: string,
       args: unknown,

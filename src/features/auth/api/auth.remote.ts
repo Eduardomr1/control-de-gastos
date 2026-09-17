@@ -9,7 +9,7 @@ import { supabase } from '@/shared/lib/supabase';
 import { traducirAuth } from '@/shared/errors';
 
 export async function signIn(email: string, password: string): Promise<void> {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase().auth.signInWithPassword({ email, password });
   if (error) throw traducirAuth(error);
 }
 
@@ -28,5 +28,5 @@ export async function signIn(email: string, password: string): Promise<void> {
 export async function signOut(): Promise<void> {
   const { limpiarAlCerrarSesion } = await import('@/features/gastos');
   await limpiarAlCerrarSesion();
-  await supabase.auth.signOut();
+  await supabase().auth.signOut();
 }
