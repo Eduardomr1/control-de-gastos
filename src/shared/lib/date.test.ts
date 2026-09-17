@@ -1,6 +1,7 @@
 import {
   DateError,
   formatDayShort,
+  formatMonthName,
   formatMonthKey,
   groupByMonth,
   monthKeyOf,
@@ -103,5 +104,22 @@ describe('formatDayShort', () => {
 
   it('rechaza un ISO sin offset explícito', () => {
     expect(() => formatDayShort('2026-09-05T12:00:00')).toThrow(DateError);
+  });
+});
+
+describe('formatMonthName', () => {
+  it('produce el nombre del mes sin año', () => {
+    expect(formatMonthName('2026-09')).toBe('septiembre');
+  });
+
+  // El encabezado decía "Total de septiembre de 2026": el año lo aporta
+  // formatMonthKey en el encabezado de sección, no este.
+  it('no incluye el año, a diferencia de formatMonthKey', () => {
+    expect(formatMonthName('2026-01')).not.toMatch(/2026/);
+    expect(formatMonthKey('2026-01')).toMatch(/2026/);
+  });
+
+  it('rechaza una clave malformada', () => {
+    expect(() => formatMonthName('2026-13-01')).toThrow(DateError);
   });
 });
