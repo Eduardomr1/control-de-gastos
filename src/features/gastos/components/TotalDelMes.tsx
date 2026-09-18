@@ -1,6 +1,6 @@
 import { Pressable, View } from 'react-native';
 
-import { formatMonthKey } from '@/shared/lib/date';
+import { formatMonthName } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { GTexto } from '@/shared/ui';
@@ -29,7 +29,7 @@ export function TotalDelMes({
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <GTexto variante="eyebrow" color={colores.textoSecundario}>
-          {`Total de ${formatMonthKey(currentMonth)}`}
+          {`Total de ${formatMonthName(currentMonth)}`}
         </GTexto>
         {onSalir ? (
           <Pressable
