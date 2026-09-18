@@ -23,6 +23,7 @@ raíz y la prueba de regresión que impide que vuelvan.
 | BUG-013 | Los gastos quedan en el dispositivo al cerrar sesión | P1 | Cerrado |
 | BUG-014 | La lista reporta un error genérico ante cualquier fallo | P1 | Cerrado |
 | BUG-015 | La app no arranca sin credenciales de Supabase | P1 | Cerrado |
+| BUG-016 | "Pendiente de sincronizar" permanente en modo local | P2 | Cerrado |
 
 ---
 
@@ -598,3 +599,51 @@ diferencia entre pruebas que pasan y pruebas que verifican.
 credenciales no lanza, pedir el cliente sin credenciales sí lanza, devuelve el
 cliente cuando las hay, y memoiza entre llamadas. El primero es el que fallaba
 antes de esta corrección.
+
+---
+
+## BUG-016 — "Pendiente de sincronizar" permanente en modo local
+
+**Prioridad:** P2 · **Estado:** Cerrado · **Encontrado en:** ejecución en emulador
+
+**Descripción**
+Sin backend configurado, todo gasto registrado mostraba en su fila el aviso
+"⏱ Pendiente de sincronizar", y lo seguía mostrando para siempre. El gasto
+estaba perfectamente guardado en SQLite; el aviso le decía al usuario que algo
+había quedado a medias.
+
+**Reproducción**
+1. Correr la app sin `.env` (modo local)
+2. Registrar un gasto
+3. La fila aparece con el aviso de pendiente, y sigue igual tras reiniciar
+
+**Causa raíz**
+`expenses.local.ts` marcaba `syncState: 'pending'` al crear, copiando la forma
+del backend remoto sin su contexto. En el remoto ese estado es real: hay una
+cola y un servidor que lo resolverán. En el local no existe ninguno de los dos
+— este módulo nunca toca `syncQueue` — así que el estado no tenía mecanismo
+detrás y no había transición posible que lo sacara de ahí.
+
+El defecto era de significado, no de lógica: un valor correcto en un backend se
+copió a otro donde no quiere decir nada.
+
+**Corrección**
+En modo local un gasto nace `synced`. Sin backend, la copia en disco *es* la
+fuente de verdad, así que está tan sincronizado como puede estarlo. Lo mismo
+para el borrado suave.
+
+`expenses.remote.ts` no cambia: ahí `pending` sigue siendo verdad, y el flujo
+E2E `03-offline.yaml` —que corre en modo remoto con el avión encendido— sigue
+verificando el aviso donde sí corresponde.
+
+**Aprendizaje**
+El despachador de backend hace que los dos módulos compartan firma, y eso
+invita a copiar el cuerpo de uno al otro. Pero la firma es el contrato; los
+estados que produce cada implementación son suyos. Un enum compartido entre dos
+backends necesita que cada valor signifique algo en ambos, o dejar explícito
+cuáles no aplican.
+
+**Regresión:** `src/features/gastos/api/expenses.local.test.ts` → "marca el
+gasto como sincronizado: sin backend, el disco local es la verdad". La prueba
+que existía antes afirmaba justo lo contrario, y pasaba: no verificaba un
+comportamiento correcto, solo el que estaba escrito.

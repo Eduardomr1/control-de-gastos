@@ -20,9 +20,11 @@ describe('createExpense', () => {
     );
   });
 
-  it('marca el gasto como pendiente de sincronizar', async () => {
+  // BUG-016: sin backend no hay nada que sincronizar, y este módulo no encola.
+  // Nacer 'pending' dejaba en la fila un aviso que nunca se iba a resolver.
+  it('marca el gasto como sincronizado: sin backend, el disco local es la verdad', async () => {
     const created = await createExpense(input());
-    expect(created.syncState).toBe('pending');
+    expect(created.syncState).toBe('synced');
   });
 
   it('genera ids distintos para gastos distintos', async () => {
