@@ -86,17 +86,35 @@ export function formatDayShort(isoWithOffset: string, locale = 'es-MX'): string 
   return `${Number(day)} ${mes.replace('.', '')}`;
 }
 
-/** Etiqueta legible de un `MonthKey`, ej. "enero 2026". */
-export function formatMonthKey(key: MonthKey, locale = 'es-MX'): string {
+/** Primer día del mes en UTC. Base común de las etiquetas de periodo. */
+function primerDiaDelMes(key: MonthKey): Date {
   const match = /^(\d{4})-(\d{2})$/.exec(key);
   if (!match) throw new DateError(`MonthKey inválido: "${key}"`);
   const [, year, month] = match;
-  const date = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
+  return new Date(Date.UTC(Number(year), Number(month) - 1, 1));
+}
+
+/** Etiqueta legible de un `MonthKey`, ej. "enero 2026". */
+export function formatMonthKey(key: MonthKey, locale = 'es-MX'): string {
   return new Intl.DateTimeFormat(locale, {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
-  }).format(date);
+  }).format(primerDiaDelMes(key));
+}
+
+/**
+ * Nombre del mes, sin año. Ej. "enero".
+ *
+ * El encabezado de la lista siempre habla del mes en curso, así que el año ahí
+ * no desambigua nada y produce "Total de enero de 2026". El año sí aparece en
+ * el encabezado de cada sección, donde distingue un enero de otro.
+ */
+export function formatMonthName(key: MonthKey, locale = 'es-MX'): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: 'long',
+    timeZone: 'UTC',
+  }).format(primerDiaDelMes(key));
 }
 
 function pad(n: number): string {
