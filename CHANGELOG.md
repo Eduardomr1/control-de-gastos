@@ -35,6 +35,9 @@ versionado según [SemVer](https://semver.org/lang/es/).
   `react-native-mmkv`
 
 ### Corregido
+- BUG-016 — en modo local todo gasto mostraba "Pendiente de sincronizar" para
+  siempre. Sin backend no hay cola ni servidor que lo resuelvan, así que el
+  gasto nace `synced`: el disco local es la fuente de verdad.
 - BUG-015 — la app no arrancaba sin credenciales de Supabase, pese a que el
   modo local no las necesita. El cliente se construía al evaluar el módulo, así
   que el fallo ocurría antes de que `isRemote` pudiera elegir backend.
