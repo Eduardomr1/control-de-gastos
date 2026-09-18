@@ -21,12 +21,16 @@ export async function fetchExpenses(): Promise<Expense[]> {
 /**
  * Crea un gasto. El id se genera aquí, en el cliente, lo que hace idempotente
  * cualquier reenvío y neutraliza el doble tap. Ver BUG-003.
+ *
+ * Nace `synced` y no `pending`: sin backend, esta copia local ES la fuente de
+ * verdad, y este módulo nunca encola nada. Marcarlo pendiente ponía en la fila
+ * un "Pendiente de sincronizar" que no existía forma de resolver. Ver BUG-016.
  */
 export async function createExpense(input: NewExpenseInput): Promise<Expense> {
   const expense: Expense = {
     ...input,
     id: generateId(),
-    syncState: 'pending',
+    syncState: 'synced',
     updatedAt: new Date().toISOString(),
   };
   expenseCache.upsert(expense);
@@ -38,7 +42,7 @@ export async function deleteExpense(id: string): Promise<void> {
   expenseCache.write(
     expenseCache
       .read()
-      .map((e) => (e.id === id ? { ...e, deletedAt: now, updatedAt: now, syncState: 'pending' } : e)),
+      .map((e) => (e.id === id ? { ...e, deletedAt: now, updatedAt: now, syncState: 'synced' } : e)),
   );
 }
 
