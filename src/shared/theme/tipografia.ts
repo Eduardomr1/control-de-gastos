@@ -3,9 +3,16 @@ import { PixelRatio, type TextStyle } from 'react-native';
 /**
  * Tipografía que respeta el escalado del sistema sin romper el layout.
  *
- * Los montos se escalan con un tope: son los elementos protagonistas y, sin
- * límite, a 310% desplazan al resto del contenido fuera de su contenedor. El
- * texto corrido escala sin tope, que es lo que espera el usuario.
+ * Los tamaños que entrega este módulo YA vienen multiplicados por la escala
+ * del sistema. Quien los consuma debe apagar el escalado automático de React
+ * Native (`allowFontScaling={false}`), o se aplicará dos veces y los topes de
+ * abajo dejarán de servir: la segunda multiplicación no los respeta. Eso lo
+ * garantizan `GTexto` y `GCampo`; ver BUG-017.
+ *
+ * Solo los montos de display llevan tope —el total del encabezado y el monto
+ * en captura—: son los elementos más grandes y, sin límite, a 300% no caben en
+ * la pantalla. El texto corrido y el monto de una fila escalan sin tope, que
+ * es lo que el usuario pidió al ampliar la fuente.
  */
 
 const MAX_AMOUNT_SCALE = 1.8;
@@ -42,9 +49,17 @@ export const typography = {
   titulo: () => ({ fontSize: scaledSize(17), fontWeight: '600' as const }),
   /** Título de pantalla. */
   tituloPantalla: () => ({ fontSize: scaledSize(30), fontWeight: '600' as const }),
-  /** Monto de una fila. Escalado con tope. */
+  /**
+   * Monto de una fila. Sin tope, a diferencia de los montos de display.
+   *
+   * Lo tuvo mientras la fila era siempre horizontal y el monto le robaba
+   * ancho a la categoría. Desde que la fila se apila por encima de 1.5x
+   * (ver `apilaPorEscala`), el monto solo convive en horizontal por debajo de
+   * esa escala, donde un tope de 1.8x nunca llega a activarse. Mantenerlo solo
+   * lograba que el dato más importante de la fila fuera el texto más pequeño.
+   */
   amount: () => ({
-    fontSize: scaledSize(16, MAX_AMOUNT_SCALE),
+    fontSize: scaledSize(16),
     fontWeight: '700' as const,
     fontVariant: TABULAR,
   }),
@@ -68,6 +83,19 @@ export const typography = {
  */
 export function rowMinHeight(): number {
   return Math.max(64, scaledSize(64));
+}
+
+/**
+ * True cuando el texto está tan ampliado que una fila horizontal deja de ser
+ * el layout correcto y conviene apilar.
+ *
+ * No es cosmética: a 300% una palabra como "Comida" mide más que la columna
+ * que le queda al lado del monto, y React Native la parte a media palabra
+ * ("Comid" / "a") porque no tiene otra salida. Apilar le devuelve el ancho
+ * completo y el corte vuelve a ocurrir entre palabras. Ver BUG-017.
+ */
+export function apilaPorEscala(umbral = 1.5): boolean {
+  return PixelRatio.getFontScale() >= umbral;
 }
 
 /**

@@ -102,6 +102,8 @@ export function AgregarScreen() {
               $
             </GTexto>
             <TextInput
+              // El tamaño ya viene escalado por typography. Ver BUG-017.
+              allowFontScaling={false}
               testID="input-monto"
               value={amount}
               onChangeText={setAmount}

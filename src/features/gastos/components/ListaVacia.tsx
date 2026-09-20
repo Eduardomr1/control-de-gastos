@@ -31,7 +31,11 @@ export function ListaVacia({ mes }: { mes: string }) {
           marginBottom: 6,
         }}
       >
-        <GTexto color="#C7C7CC" style={{ fontSize: 26, lineHeight: 30 }}>
+        {/* Escala con su círculo y con el mismo tope, no por su cuenta. */}
+        <GTexto
+          color="#C7C7CC"
+          style={{ fontSize: scaledSize(26, 1.5), lineHeight: scaledSize(30, 1.5) }}
+        >
           +
         </GTexto>
       </View>

@@ -39,6 +39,10 @@ versionado según [SemVer](https://semver.org/lang/es/).
   `react-native-mmkv`
 
 ### Corregido
+- BUG-017 — el escalado de fuente se aplicaba dos veces (una en `typography` y
+  otra por el `allowFontScaling` de React Native), lo que anulaba los topes y
+  dejaba la lista inutilizable al 300%. Además, la fila ahora se apila por
+  encima de 1.5x para que las palabras no se partan a la mitad.
 - BUG-016 — en modo local todo gasto mostraba "Pendiente de sincronizar" para
   siempre. Sin backend no hay cola ni servidor que lo resuelvan, así que el
   gasto nace `synced`: el disco local es la fuente de verdad.

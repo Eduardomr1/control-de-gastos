@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { formatDayShort } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
-import { rowMinHeight, scaledSize } from '@/shared/theme/tipografia';
+import { apilaPorEscala, rowMinHeight, scaledSize } from '@/shared/theme/tipografia';
 import { GTexto } from '@/shared/ui';
 import type { Category, Expense } from '@/types/expense';
 
@@ -23,6 +23,7 @@ export function FilaGasto({
   const nombre = categoria?.name ?? expense.categoryId;
   const color = categoria?.color ?? colores.acento;
   const fecha = formatDayShort(expense.occurredAt);
+  const apilado = apilaPorEscala();
 
   return (
     <Pressable
@@ -45,11 +46,12 @@ export function FilaGasto({
       style={{
         // minHeight, nunca height. Ver BUG-005.
         minHeight: rowMinHeight(),
-        flexDirection: 'row',
-        // flexWrap: al ampliar la fuente el monto baja a su propio renglón en
-        // vez de empujar la categoría fuera de la fila.
+        // Con la fuente muy ampliada la fila se vuelve columna: en horizontal
+        // el monto le roba a la categoría el ancho que necesita y la palabra
+        // termina partida a la mitad. Ver BUG-017.
+        flexDirection: apilado ? 'column' : 'row',
         flexWrap: 'wrap',
-        alignItems: 'center',
+        alignItems: apilado ? 'flex-start' : 'center',
         gap: 14,
         paddingHorizontal: 18,
         paddingVertical: 14,
@@ -79,7 +81,16 @@ export function FilaGasto({
         />
       </View>
 
-      <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 150, gap: 2 }}>
+      <View
+        style={{
+          flexGrow: 1,
+          flexShrink: 1,
+          // Apilado toma el ancho completo; en fila cede lo que necesita el monto.
+          flexBasis: apilado ? 'auto' : 150,
+          alignSelf: apilado ? 'stretch' : undefined,
+          gap: 2,
+        }}
+      >
         <GTexto variante="body" style={{ fontWeight: '500' }}>
           {nombre}
         </GTexto>
@@ -94,7 +105,11 @@ export function FilaGasto({
         ) : null}
       </View>
 
-      <GTexto variante="amount" testID={`gasto-monto-${index}`} style={{ marginLeft: 'auto' }}>
+      <GTexto
+        variante="amount"
+        testID={`gasto-monto-${index}`}
+        style={apilado ? undefined : { marginLeft: 'auto' }}
+      >
         {formatMoney(expense.amountCents, expense.currency)}
       </GTexto>
     </Pressable>

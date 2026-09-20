@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatMonthKey } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
-import { controlSize } from '@/shared/theme/tipografia';
+import { controlSize, scaledSize } from '@/shared/theme/tipografia';
 import { esFailure, type Failure } from '@/shared/errors';
 import { GAsyncGate, GTexto } from '@/shared/ui';
 import { signOut } from '@/features/auth';
@@ -220,7 +220,18 @@ function ContenidoLista({
             elevation: 8,
           }}
         >
-          <Text style={{ color: colores.sobreAcento, fontSize: 28, lineHeight: 32 }}>+</Text>
+          {/* El círculo ya escala con controlSize y tiene tope; el glifo
+              escala con él, no por su cuenta. Ver BUG-017. */}
+          <Text
+            allowFontScaling={false}
+            style={{
+              color: colores.sobreAcento,
+              fontSize: scaledSize(28, 1.5),
+              lineHeight: scaledSize(32, 1.5),
+            }}
+          >
+            +
+          </Text>
         </Pressable>
       </Link>
     </SafeAreaView>
