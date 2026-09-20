@@ -24,6 +24,7 @@ raíz y la prueba de regresión que impide que vuelvan.
 | BUG-014 | La lista reporta un error genérico ante cualquier fallo | P1 | Cerrado |
 | BUG-015 | La app no arranca sin credenciales de Supabase | P1 | Cerrado |
 | BUG-016 | "Pendiente de sincronizar" permanente en modo local | P2 | Cerrado |
+| BUG-017 | El escalado de fuente se aplicaba dos veces y anulaba los topes | P1 | Cerrado |
 
 ---
 
@@ -647,3 +648,85 @@ cuáles no aplican.
 gasto como sincronizado: sin backend, el disco local es la verdad". La prueba
 que existía antes afirmaba justo lo contrario, y pasaba: no verificaba un
 comportamiento correcto, solo el que estaba escrito.
+
+---
+
+## BUG-017 — El escalado de fuente se aplicaba dos veces y anulaba los topes
+
+**Prioridad:** P1 · **Estado:** Cerrado · **Encontrado en:** verificación en emulador al 300%
+
+**Descripción**
+Con el tamaño de texto del sistema al 300%, la lista quedaba inutilizable: el
+total del mes ocupaba media pantalla y se partía a media cifra (`$16` en un
+renglón, `0.00` en el siguiente), la versalita del encabezado no aparecía y
+"2 gastos registrados" se cortaba contra el borde inferior.
+
+**Reproducción**
+1. `adb shell settings put system font_scale 3.0`
+2. Cerrar y reabrir la app
+3. Abrir la lista de gastos
+
+**Causa raíz**
+El escalado se aplicaba **dos veces**.
+
+`typography.total()` devuelve `scaledSize(34, 1.8)`, es decir 34 × 1.8 = 61px,
+con el tope ya aplicado. Pero `allowFontScaling` viene en `true` por defecto en
+React Native, así que el motor volvía a multiplicar ese 61 por la escala del
+sistema: 61 × 3.0 = **183px**. No había un solo `allowFontScaling` en todo el
+codebase.
+
+Lo importante no es el factor de más, sino que **la segunda multiplicación no
+respeta los topes**. Todo el mecanismo de `MAX_AMOUNT_SCALE` —el que existe
+precisamente para que el monto no desborde— quedaba anulado por una propiedad
+que nadie escribió.
+
+Arreglado eso aparecieron dos defectos que el primero ocultaba:
+
+*Palabras partidas a la mitad.* Con el monto y la categoría compartiendo fila,
+a 300% la columna central se encogía por debajo del ancho de una sola palabra y
+React Native partía "Comida" en "Comid" / "a". A esa escala una fila horizontal
+simplemente ya no es el layout correcto.
+
+*El dato más importante era el texto más pequeño.* El monto de fila seguía
+topado a 1.8x mientras la categoría escalaba libre a 3x, así que `$100.00` se
+veía más chico que "Comida".
+
+**Corrección**
+`GTexto` y `GCampo` pasan `allowFontScaling={false}`, igual que los dos
+`TextInput` y el glifo del FAB. No desactiva Dynamic Type: lo contrario. El
+escalado se sigue aplicando, pero una sola vez y por `typography`, que es quien
+conoce los topes.
+
+`apilaPorEscala()` convierte la fila en columna por encima de 1.5x, devolviendo
+el ancho completo a la categoría para que el corte vuelva a ocurrir entre
+palabras.
+
+Y el tope del monto de fila se elimina, porque el apilado lo volvió código
+muerto: por encima de 1.5x el monto ya no convive en horizontal con nada, y por
+debajo un tope de 1.8x nunca se activa. Su único efecto era encoger el dato más
+importante de la fila.
+
+**Aprendizaje**
+Cuando se calcula a mano algo que el framework también calcula, hay que apagar
+el del framework. Nadie escribió `allowFontScaling`, y esa ausencia —no una
+línea equivocada— fue el defecto: el valor por defecto de la plataforma
+contradecía en silencio la arquitectura del módulo.
+
+Había además una regla de ESLint protegiendo BUG-005 que prohíbe `height` fija.
+Vigilaba al vecino del problema, no al problema: el layout se rompía por
+`fontSize`, no por `height`, y la regla pasó en verde los tres defectos.
+`docs/arquitectura/brainstorming-pendientes.md` ya había señalado justamente
+eso sobre el glifo del FAB antes de que ocurriera.
+
+Y los tres vivieron con la suite entera en verde. Ninguna prueba unitaria podía
+cazarlos: la falla no estaba en nuestra aritmética —que siempre fue correcta—
+sino en la interacción entre ella y el renderizador. Por eso la verificación en
+dispositivo no es un trámite opcional al final, y por eso el segundo y el
+tercer defecto solo fueron visibles después de arreglar el primero.
+
+**Regresión:** `src/shared/theme/tipografia.test.ts` — 15 casos que fijan los
+topes, el umbral de apilado y la decisión de NO topar el monto de fila. Simulan
+`react-native` entero, que es lo que permitió sacar `tipografia.ts` de las
+exclusiones de cobertura, donde llevaba desde que se creó. No habrían cazado
+este bug, pero impiden que las decisiones que lo cerraron se deshagan sin
+enterarse. La verificación real es en dispositivo: `docs/accessibility-audit.md`.

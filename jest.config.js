@@ -8,9 +8,10 @@ module.exports = {
     'src/shared/**/*.ts',
     'src/features/**/*.ts',
     '!**/*.test.ts',
-    // tipografia.ts depende de PixelRatio de React Native: se verifica en el
-    // E2E de Dynamic Type (.maestro/05-dynamic-type.yaml), no en unitarias.
-    '!src/shared/theme/tipografia.ts',
+    // tipografia.ts estuvo excluido por depender de PixelRatio. Desde BUG-017
+    // se prueba simulando react-native entero: lo unico que se necesita de el
+    // es la escala que reporta el sistema, y los topes de escalado son
+    // decisiones de accesibilidad que merecen quedar fijadas.
     // Modulos que solo envuelven dependencias nativas (MMKV, supabase-js,
     // expo-sqlite) o hablan directo con la red: su comportamiento se verifica
     // en E2E o en dispositivo, no en unitarias.
