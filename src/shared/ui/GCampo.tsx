@@ -27,6 +27,8 @@ export function GCampo({ etiqueta, error, style, onFocus, onBlur, ...props }: GC
       ) : null}
 
       <TextInput
+        // El tamaño ya viene escalado por typography. Ver BUG-017 y GTexto.
+        allowFontScaling={false}
         placeholderTextColor={colores.textoSecundario}
         onFocus={(e) => {
           setEnfocado(true);
