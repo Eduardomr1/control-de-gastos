@@ -6,6 +6,9 @@ versionado según [SemVer](https://semver.org/lang/es/).
 ## [No publicado]
 
 ### Agregado
+- Linea base del modelo de datos para la expansion funcional, con el esquema
+  actual y el propuesto para ingresos, presupuestos, recurrentes, cuentas y
+  metas de ahorro (`docs/arquitectura/baseline_modelo_datos_2026-09-21.md`)
 - La lista agrupa por mes con subtotal por periodo; antes solo era visible el
   mes en curso
 - Nota opcional al registrar un gasto. El modelo y la columna de SQLite ya la
@@ -13,6 +16,12 @@ versionado según [SemVer](https://semver.org/lang/es/).
 - Categorías Compras y Salud (migración `0002`)
 
 ### Cambiado
+- El esquema de SQLite se mueve de `features/gastos/store/expenseDb.ts` a
+  `shared/lib/db/`. El archivo `gastos.db` es uno solo y su `user_version`
+  tambien: con una lista de migraciones por feature, dos listas competirian por
+  el mismo contador y la segunda se saltaria en silencio las migraciones de la
+  primera. Ademas, la Regla 1 impide que un feature nuevo importe el store de
+  otro. Ver `docs/arquitectura/baseline_modelo_datos_2026-09-21.md`
 - El esquema de SQLite se versiona con `user_version` y aplica migraciones al
   abrir la app. Antes era un `create table if not exists` suelto, que es mudo
   ante una tabla ya existente: la primera columna que se agregara nunca habría

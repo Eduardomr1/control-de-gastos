@@ -35,7 +35,7 @@ src/
 │   │   │   └── AgregarScreen.tsx
 │   │   ├── store/                    # persistencia local del feature
 │   │   │   ├── syncQueue.ts          # cola de salida (MMKV)
-│   │   │   └── expenseDb.ts          # copia de lectura (SQLite)
+│   │   │   └── expenseDb.ts          # tabla gastos (usa shared/lib/db)
 │   │   ├── types.ts
 │   │   └── index.ts                  # barrel — única puerta de salida
 │   ├── auth/
@@ -57,6 +57,9 @@ src/
 │   │   ├── GAsyncGate.tsx            # Carga Verdadera
 │   │   └── index.ts
 │   ├── lib/
+│   │   ├── db/                       # base local: una base, una linea de tiempo
+│   │   │   ├── migraciones.ts        # esquema versionado con user_version
+│   │   │   └── index.ts              # unico modulo que abre expo-sqlite
 │   │   ├── supabase.ts               # cliente de API
 │   │   ├── sync-engine.ts            # resolveConflict, dedupeQueue, reconcile
 │   │   ├── money.ts                  # aritmética en centavos enteros

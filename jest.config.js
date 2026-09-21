@@ -18,6 +18,9 @@ module.exports = {
     '!src/shared/storage/deviceStorage.ts',
     '!src/shared/lib/supabase.ts',
     '!src/features/gastos/store/expenseDb.ts',
+    // index.ts de shared/lib/db abre expo-sqlite al importarse; la logica de
+    // versionado que si se puede romper vive en migraciones.ts y esa si se prueba.
+    '!src/shared/lib/db/index.ts',
     '!src/features/gastos/store/syncQueueInstance.ts',
     '!src/features/gastos/api/sync.ts',
     '!src/features/gastos/api/expenses.remote.ts',
