@@ -18,8 +18,16 @@ import { ListaVacia } from '../components/ListaVacia';
 import { EsqueletoLista } from '../components/EsqueletoLista';
 
 export function ListaScreen() {
-  const { currentMonth, resultados, gastos, secciones, categorias, total, eliminar } =
-    useGastos();
+  const {
+    currentMonth,
+    resultados,
+    gastos,
+    secciones,
+    categorias,
+    total,
+    ingresosDelMes,
+    eliminar,
+  } = useGastos();
 
   function confirmarEliminar(id: string, label: string) {
     Alert.alert('Eliminar gasto', `¿Eliminar ${label}?`, [
@@ -32,6 +40,7 @@ export function ListaScreen() {
     <ContenidoLista
       currentMonth={currentMonth}
       conteo={gastos.length}
+      ingresosCents={ingresosDelMes}
       secciones={secciones}
       categorias={categorias}
       total={total}
@@ -121,6 +130,7 @@ function copiaError(failure: Failure): string {
 function ContenidoLista({
   currentMonth,
   conteo,
+  ingresosCents,
   secciones,
   categorias,
   total,
@@ -129,6 +139,7 @@ function ContenidoLista({
 }: {
   currentMonth: string;
   conteo: number;
+  ingresosCents: number;
   secciones: ReturnType<typeof useGastos>['secciones'];
   categorias: ReturnType<typeof useGastos>['categorias'];
   total: number;
@@ -147,6 +158,7 @@ function ContenidoLista({
           <TotalDelMes
             currentMonth={currentMonth}
             totalCents={total}
+            ingresosCents={ingresosCents}
             conteo={conteo}
             onSalir={onSalir}
           />

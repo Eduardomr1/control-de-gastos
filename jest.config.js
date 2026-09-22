@@ -21,6 +21,7 @@ module.exports = {
     // index.ts de shared/lib/db abre expo-sqlite al importarse; la logica de
     // versionado que si se puede romper vive en migraciones.ts y esa si se prueba.
     '!src/shared/lib/db/index.ts',
+    '!src/features/ingresos/store/ingresosDb.ts',
     '!src/features/gastos/store/syncQueueInstance.ts',
     '!src/features/gastos/api/sync.ts',
     '!src/features/gastos/api/expenses.remote.ts',
@@ -32,18 +33,23 @@ module.exports = {
     '!src/features/gastos/index.ts',
     '!src/features/auth/index.ts',
     '!src/features/categorias/index.ts',
+    '!src/features/ingresos/index.ts',
     '!src/shared/ui/index.ts',
     // colores.ts es un objeto de datos sin lógica, y los componentes que lo
     // consumen (GTexto, GBoton, GCampo) no tienen prueba unitaria propia por
     // la misma razón que useSession.ts: dependen de un entorno de render que
     // este proyecto no monta en Node.
     '!src/shared/theme/colores.ts',
+    // Mismo criterio para los types.ts de feature: son declaraciones mas, a
+    // veces, una constante de datos (FUENTES). No hay logica que romper.
+    '!src/features/*/types.ts',
     // Hooks de React: useQueries/useMutation/useState+useEffect necesitan un
     // entorno de render (React Testing Library con jest-expo o similar), que
     // este proyecto no tiene. Se verifican en los flujos de .maestro/.
     '!src/features/gastos/hooks/**',
     '!src/features/categorias/hooks/**',
     '!src/features/auth/hooks/**',
+    '!src/features/ingresos/hooks/**',
   ],
   coverageThreshold: {
     global: { branches: 80, functions: 90, lines: 90, statements: 90 },

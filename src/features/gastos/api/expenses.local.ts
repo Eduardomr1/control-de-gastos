@@ -12,6 +12,7 @@
 
 import type { Expense, NewExpenseInput } from '@/types/expense';
 import { nowLocalIso } from '@/shared/lib/date';
+import { generarId } from '@/shared/lib/id';
 import { expenseCache } from '../store/expenseCache';
 
 export async function fetchExpenses(): Promise<Expense[]> {
@@ -29,7 +30,7 @@ export async function fetchExpenses(): Promise<Expense[]> {
 export async function createExpense(input: NewExpenseInput): Promise<Expense> {
   const expense: Expense = {
     ...input,
-    id: generateId(),
+    id: generarId(),
     syncState: 'synced',
     updatedAt: new Date().toISOString(),
   };
@@ -48,13 +49,4 @@ export async function deleteExpense(id: string): Promise<void> {
 
 export function draftOccurredAt(): string {
   return nowLocalIso();
-}
-
-function generateId(): string {
-  // UUID v4 sin dependencias externas.
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
 }

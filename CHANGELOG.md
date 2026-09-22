@@ -6,6 +6,19 @@ versionado según [SemVer](https://semver.org/lang/es/).
 ## [No publicado]
 
 ### Agregado
+- Ingresos. Alta con fuente y nota, y balance neto del mes (ingresos - gastos)
+  como protagonista del encabezado de la lista, con el gasto y el ingreso
+  acumulados debajo. El balance negativo se muestra con su signo y en rojo: un
+  mes en el que se gasto mas de lo que entro es justo el dato que la pantalla
+  existe para dar
+- El monto de un ingreso se valida en el backend y no solo en la pantalla: la
+  pantalla es una de las formas de llegar, y la regla tiene que seguir de pie
+  cuando el ingreso lo genere un recurrente
+- `shared/lib/db/repositorioLocal.ts`: copia en memoria respaldada por SQLite,
+  con el disco cargado perezosamente. Es lo que `expenseCache` hacia a mano;
+  ahora cada tabla nueva lo obtiene en cinco lineas
+- `shared/lib/id.ts`: el generador de UUID de cliente sale de
+  `expenses.local.ts`, porque toda tabla nueva lo necesita
 - Linea base del modelo de datos para la expansion funcional, con el esquema
   actual y el propuesto para ingresos, presupuestos, recurrentes, cuentas y
   metas de ahorro (`docs/arquitectura/baseline_modelo_datos_2026-09-21.md`)
