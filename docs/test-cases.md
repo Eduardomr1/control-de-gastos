@@ -239,3 +239,53 @@ los cuatro producían el mismo texto genérico.
 |---|---|
 | Pasos | Abrir el resumen mensual con red lenta (3G simulado) |
 | Resultado esperado | Un único skeleton a nivel pantalla hasta que gastos, categorías y totales estén resueltos. No se permite el renderizado en cascada de secciones parciales. |
+
+---
+
+## Suite: Ingresos y balance
+
+### TC-070 — Balance neto del mes
+**Prioridad:** P1 · **Automatizado** · `.maestro/07-balance-con-ingreso.yaml`
+
+| | |
+|---|---|
+| Precondición | Mes en curso sin movimientos |
+| Pasos | 1. Registrar un gasto de `300.00`<br>2. Registrar un ingreso de `1,000.00` desde "+ Ingreso" |
+| Resultado esperado | El balance del mes muestra `$700.00`; "Gastos" muestra `$300.00` e "Ingresos" `$1,000.00` |
+| Nota | La aserción va sobre el balance y no sobre el ingreso: que el ingreso aparezca solo prueba que se guardó; que el balance sea la resta prueba que ambos features se están hablando sobre el mismo periodo. |
+
+### TC-071 — Balance negativo
+**Prioridad:** P2 · **Automatizado** · `.maestro/07-balance-con-ingreso.yaml`
+
+| | |
+|---|---|
+| Pasos | Registrar un gasto sin ningún ingreso en el mes |
+| Resultado esperado | El balance muestra `-$300.00` en rojo, con su signo. No se topa en cero ni se muestra en valor absoluto |
+| Nota | Gastar más de lo que entró es justo el dato que la pantalla existe para dar. |
+
+### TC-072 — Rechazo de ingreso no positivo
+**Prioridad:** P1 · **Automatizado** · `src/features/ingresos/api/ingresos.local.test.ts`
+
+| | |
+|---|---|
+| Pasos | Intentar registrar un ingreso de `0` y otro de `-1` |
+| Resultado esperado | Ambos se rechazan con `MoneyError` y no quedan guardados |
+| Nota | La validación vive en el backend, no solo en la pantalla: el día que un recurrente genere ingresos solo, la regla tiene que seguir de pie. |
+
+### TC-073 — Clasificación del ingreso por mes local
+**Prioridad:** P1 · **Automatizado** · `src/features/ingresos/totales.test.ts`
+
+| | |
+|---|---|
+| Pasos | Registrar un ingreso el 30 de septiembre a las 23:50 en `-07:00` |
+| Resultado esperado | Cuenta para septiembre, no para octubre |
+| Nota | BUG-002 aplicado a ingresos: el periodo se decide en hora local, nunca en UTC. |
+
+### TC-074 — Los ingresos no sobreviven al cierre de sesión
+**Prioridad:** P1 · **Automatizado** · `src/features/auth/api/auth.remote.test.ts`
+
+| | |
+|---|---|
+| Pasos | Registrar un ingreso, cerrar sesión y entrar con otra cuenta |
+| Resultado esperado | La copia local de ingresos queda vacía |
+| Nota | BUG-013 se cerró cuando gastos era la única tabla del usuario. Cada tabla nueva reabre el agujero por su cuenta. |

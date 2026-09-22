@@ -19,5 +19,11 @@ export const colores = {
   /** Texto e iconos encima del acento. */
   sobreAcento: '#FFFFFF',
   error: '#DC2626',
+  /**
+   * Dinero que entra: monto en la captura de ingreso y balance en verde.
+   * Verde oscuro y no el verde de marca: sobre `superficie` da 5.1:1, que pasa
+   * AA para texto normal. Un verde más vivo se ve mejor y no se lee.
+   */
+  positivo: '#15803D',
   borde: '#E5E5EA',
 } as const;

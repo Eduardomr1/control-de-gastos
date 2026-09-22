@@ -4,7 +4,7 @@
  * useSession() vive en useSession.ts, aparte, y no se cubre en ningun lado:
  * es un hook de React y este proyecto corre las pruebas en entorno node. Este
  * archivo prueba la logica propia de auth.ts: la traduccion de errores y que
- * signOut delega la limpieza local al feature de gastos antes de cerrar la
+ * signOut delega la limpieza local a cada feature antes de cerrar la
  * sesion remota. El ORDEN push-antes-de-limpiar y la resiliencia sin red son
  * propiedad de limpiarAlCerrarSesion() y se prueban en
  * features/gastos/limpiarAlCerrarSesion.test.ts, no aqui.
@@ -27,14 +27,17 @@ jest.mock('@/shared/lib/supabase', () => {
 jest.mock('@/features/gastos', () => ({
   limpiarAlCerrarSesion: jest.fn().mockResolvedValue(undefined),
 }));
+jest.mock('@/features/ingresos', () => ({ limpiarIngresos: jest.fn() }));
 
 const supabase = jest.requireMock('@/shared/lib/supabase').supabase();
 const { limpiarAlCerrarSesion } = jest.requireMock('@/features/gastos');
+const { limpiarIngresos } = jest.requireMock('@/features/ingresos');
 
 beforeEach(() => {
   jest.clearAllMocks();
   supabase.auth.signOut.mockResolvedValue({ error: null });
   limpiarAlCerrarSesion.mockResolvedValue(undefined);
+  limpiarIngresos.mockImplementation(() => undefined);
 });
 
 describe('signIn', () => {
@@ -76,10 +79,13 @@ describe('signIn', () => {
 });
 
 describe('signOut', () => {
-  it('limpia los datos locales del feature de gastos antes de cerrar la sesión remota', async () => {
+  it('limpia los datos locales de cada feature antes de cerrar la sesión remota', async () => {
     const orden: string[] = [];
     limpiarAlCerrarSesion.mockImplementation(async () => {
-      orden.push('limpiar-local');
+      orden.push('limpiar-gastos');
+    });
+    limpiarIngresos.mockImplementation(() => {
+      orden.push('limpiar-ingresos');
     });
     supabase.auth.signOut.mockImplementation(async () => {
       orden.push('cerrar-sesion-remota');
@@ -88,7 +94,17 @@ describe('signOut', () => {
 
     await signOut();
 
-    expect(orden).toEqual(['limpiar-local', 'cerrar-sesion-remota']);
+    expect(orden).toEqual(['limpiar-gastos', 'limpiar-ingresos', 'cerrar-sesion-remota']);
+  });
+
+  /**
+   * BUG-013 se cerró cuando gastos era la única tabla del usuario. Cada tabla
+   * nueva reabre el agujero por su cuenta: si signOut no la limpia, la
+   * siguiente persona que entre en este dispositivo ve datos ajenos.
+   */
+  it('no deja ingresos en el dispositivo', async () => {
+    await signOut();
+    expect(limpiarIngresos).toHaveBeenCalledTimes(1);
   });
 
   it('propaga si la limpieza local falla, sin cerrar la sesión remota a medias', async () => {
