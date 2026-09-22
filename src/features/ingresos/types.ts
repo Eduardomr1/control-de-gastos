@@ -1,0 +1,41 @@
+import type { SyncState } from '@/types/expense';
+
+/**
+ * Un ingreso. Hereda las mismas decisiones de dominio que `Expense`, porque el
+ * problema es el mismo: dinero en centavos enteros, fecha ISO con offset
+ * explícito, id de cliente para poder crear sin red, y borrado suave.
+ *
+ * Vive en el feature y no en `@/types/` a diferencia de `Expense`: nada de
+ * `shared/` lo necesita. El día que ingresos sincronice contra Supabase y
+ * `sync-engine.ts` tenga que resolver sus conflictos, se mueve — no antes.
+ *
+ * `cuentaId` existe como columna en SQLite desde v2 pero no como campo aquí:
+ * hasta la Fase 5 no hay cuentas, y un campo que nadie lee solo da a elegir
+ * entre dejarlo indefinido o inventarle un valor.
+ */
+export interface Income {
+  readonly id: string;
+  readonly amountCents: number;
+  readonly currency: string;
+  /** De dónde vino. Texto libre con sugerencias, no un catálogo del backend. */
+  readonly fuente: string;
+  /** ISO 8601 con offset explícito. Nunca una fecha "desnuda". */
+  readonly occurredAt: string;
+  readonly note?: string;
+  readonly syncState: SyncState;
+  readonly updatedAt: string;
+  readonly deletedAt?: string;
+}
+
+export type NewIncomeInput = Omit<
+  Income,
+  'id' | 'syncState' | 'updatedAt' | 'deletedAt'
+>;
+
+/**
+ * Sugerencias de fuente. Una constante y no una tabla: son cinco cadenas que
+ * no cambian por usuario ni por dispositivo, y el campo acepta cualquier otra
+ * cosa que el usuario escriba. Una tabla obligaría a una migración, un CRUD y
+ * una pantalla de administración para algo que se resuelve con un arreglo.
+ */
+export const FUENTES = ['Sueldo', 'Freelance', 'Venta', 'Regalo', 'Otro'] as const;

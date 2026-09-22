@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { formatMonthName } from '@/shared/lib/date';
@@ -5,18 +6,31 @@ import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { GTexto } from '@/shared/ui';
 
+/**
+ * Encabezado de la lista: balance del mes arriba, y debajo las dos mitades que
+ * lo forman.
+ *
+ * El protagonista es el balance y no el gasto acumulado, porque es el número
+ * que responde la pregunta que trae el usuario ("¿cómo voy este mes?"). El
+ * gasto sigue visible con su propio `testID`: es el dato que verifican los
+ * flujos E2E, y ninguno tuvo que cambiar por este rediseño.
+ */
 export function TotalDelMes({
   currentMonth,
   totalCents,
+  ingresosCents,
   conteo,
   onSalir,
 }: {
   currentMonth: string;
   totalCents: number;
+  ingresosCents: number;
   conteo: number;
   /** Ausente en modo local: no hay sesión de la que salir. */
   onSalir?: (() => void) | undefined;
 }) {
+  const balance = ingresosCents - totalCents;
+
   return (
     <View
       style={{
@@ -29,7 +43,7 @@ export function TotalDelMes({
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <GTexto variante="eyebrow" color={colores.textoSecundario}>
-          {`Total de ${formatMonthName(currentMonth)}`}
+          {`Balance de ${formatMonthName(currentMonth)}`}
         </GTexto>
         {onSalir ? (
           <Pressable
@@ -57,15 +71,73 @@ export function TotalDelMes({
           gap: 8,
         }}
       >
-        <GTexto variante="total" color={colores.acento} testID="total-mes">
-          {formatMoney(totalCents)}
+        <GTexto
+          variante="total"
+          // Un balance negativo se muestra en rojo y con su signo, no en valor
+          // absoluto: gastar más de lo que entró es exactamente el dato que la
+          // pantalla existe para dar.
+          color={balance < 0 ? colores.error : colores.positivo}
+          testID="balance-mes"
+        >
+          {formatMoney(balance)}
         </GTexto>
         <GTexto variante="caption" color={colores.textoSecundario}>
           MXN
         </GTexto>
       </View>
 
-      <GTexto variante="caption" color={colores.textoSecundario}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 16,
+          paddingTop: 8,
+        }}
+      >
+        <View style={{ gap: 2 }}>
+          <GTexto variante="caption" color={colores.textoSecundario}>
+            Gastos
+          </GTexto>
+          <GTexto variante="label" color={colores.texto} testID="total-mes">
+            {formatMoney(totalCents)}
+          </GTexto>
+        </View>
+
+        <View style={{ gap: 2 }}>
+          <GTexto variante="caption" color={colores.textoSecundario}>
+            Ingresos
+          </GTexto>
+          <GTexto variante="label" color={colores.positivo} testID="total-ingresos-mes">
+            {formatMoney(ingresosCents)}
+          </GTexto>
+        </View>
+
+        {/* El FAB se queda para el gasto, que es la acción frecuente; el
+            ingreso se registra dos o tres veces al mes y no merece competir
+            por el pulgar. Aquí está donde el usuario ya vino a mirarlo. */}
+        <Link href="/ingreso" asChild>
+          <Pressable
+            testID="btn-agregar-ingreso"
+            accessibilityRole="button"
+            accessibilityLabel="Registrar ingreso"
+            style={{
+              minHeight: 44,
+              justifyContent: 'center',
+              paddingHorizontal: 14,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: colores.positivo,
+            }}
+          >
+            <GTexto variante="caption" color={colores.positivo} style={{ fontWeight: '600' }}>
+              + Ingreso
+            </GTexto>
+          </Pressable>
+        </Link>
+      </View>
+
+      <GTexto variante="caption" color={colores.textoSecundario} style={{ paddingTop: 8 }}>
         {conteo === 1 ? '1 gasto registrado' : `${conteo} gastos registrados`}
       </GTexto>
     </View>

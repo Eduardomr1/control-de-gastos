@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { monthKeyOf, nowLocalIso } from '@/shared/lib/date';
 import { useCategorias } from '@/features/categorias';
+import { useIngresos } from '@/features/ingresos';
 import { deleteExpense, fetchExpenses } from '../api';
 import { agruparEnSecciones } from '../secciones';
 import type { Category, Expense } from '@/types/expense';
@@ -23,7 +24,12 @@ export function useGastos() {
     queryFn: fetchExpenses,
   });
   const categoriasQuery = useCategorias();
-  const resultados = [expensesQuery, categoriasQuery];
+  // Los ingresos son de otro feature y se piden por su barrel (Regla 2). Su
+  // consulta entra a `resultados` para que el balance no se renderice con la
+  // mitad de los datos: un balance a medias es un numero equivocado, no un
+  // numero incompleto. Ver BUG-006.
+  const ingresos = useIngresos();
+  const resultados = [expensesQuery, categoriasQuery, ingresos.query];
 
   const eliminar = useMutation({
     mutationFn: deleteExpense,
@@ -49,6 +55,7 @@ export function useGastos() {
     secciones,
     categorias,
     total,
+    ingresosDelMes: ingresos.totalDelMes,
     eliminar,
   };
 }

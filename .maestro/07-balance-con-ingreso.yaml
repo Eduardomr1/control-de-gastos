@@ -1,0 +1,52 @@
+# TC-070 — Registro de un ingreso y balance neto del mes.
+#
+# La asercion fuerte es el BALANCE, no el ingreso: que el ingreso aparezca solo
+# prueba que se guardo. Que el balance diga $700.00 despues de un ingreso de
+# $1,000.00 y un gasto de $300.00 prueba que la resta se hizo sobre el periodo
+# correcto y con los dos features hablandose.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+- assertVisible:
+    id: "screen-lista"
+
+# Un gasto de 300.
+- tapOn:
+    id: "fab-agregar"
+- assertVisible:
+    id: "screen-nuevo-gasto"
+- tapOn:
+    id: "input-monto"
+- inputText: "300.00"
+- tapOn:
+    id: "categoria-comida"
+- tapOn:
+    id: "btn-guardar"
+- assertVisible:
+    id: "screen-lista"
+
+# Sin ingresos todavia, el balance es negativo y se ve en rojo.
+- assertVisible:
+    id: "balance-mes"
+- assertVisible: "-$300.00"
+
+# Un ingreso de 1,000.
+- tapOn:
+    id: "btn-agregar-ingreso"
+- assertVisible:
+    id: "screen-nuevo-ingreso"
+- tapOn:
+    id: "input-monto"
+- inputText: "1,000.00"
+- tapOn:
+    id: "fuente-sueldo"
+- tapOn:
+    id: "btn-guardar"
+
+- assertVisible:
+    id: "screen-lista"
+- assertVisible:
+    id: "total-ingresos-mes"
+- assertVisible: "$1,000.00"
+- assertVisible: "$700.00"
+- assertNotVisible: "-$300.00"

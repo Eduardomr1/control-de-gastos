@@ -20,13 +20,19 @@ export async function signIn(email: string, password: string): Promise<void> {
  * que la siguiente persona en entrar viera gastos ajenos (BUG-013). Antes de
  * borrarlas se intenta enviar lo pendiente, para no perder trabajo por salir.
  *
- * La limpieza en sí (cola + caché) es un detalle interno de gastos, no algo
- * que auth deba conocer; por eso se pide por el barrel del feature, nunca por
- * ruta interna (Regla 2). Ahora que auth es un feature, el lint de la Fase 5
- * vigila justo esto.
+ * La limpieza en sí (cola + caché) es un detalle interno de cada feature, no
+ * algo que auth deba conocer; por eso se pide por el barrel, nunca por ruta
+ * interna (Regla 2). El lint de fronteras vigila justo esto.
+ *
+ * La lista crece con cada tabla nueva, y eso es deliberado: cada feature dice
+ * qué significa "olvidar a este usuario" para sus datos. Un barrido genérico
+ * sobre SQLite no sabría que gastos además tiene que intentar enviar la cola
+ * antes de borrarla.
  */
 export async function signOut(): Promise<void> {
   const { limpiarAlCerrarSesion } = await import('@/features/gastos');
   await limpiarAlCerrarSesion();
+  const { limpiarIngresos } = await import('@/features/ingresos');
+  limpiarIngresos();
   await supabase().auth.signOut();
 }

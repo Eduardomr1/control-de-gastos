@@ -44,6 +44,28 @@ export const MIGRACIONES: readonly string[] = [
      updated_at    text not null,
      deleted_at    text
    );`,
+
+  // 2 — ingresos (Fase 1).
+  //
+  // `cuenta_id` nace nullable y sin usar: la Fase 5 solo tendrá que poblarla,
+  // no agregarla con un `alter table` sobre una tabla ya con datos.
+  //
+  // No lleva `recurrente boolean`: un ingreso recurrente es una fila de la
+  // tabla `recurrentes` (v4) con tipo 'ingreso'. El booleano sería la misma
+  // información en dos lugares, y el día que se contradigan no hay forma de
+  // saber cuál manda.
+  `create table if not exists ingresos (
+     id            text primary key not null,
+     amount_cents  integer not null,
+     currency      text not null,
+     fuente        text not null,
+     occurred_at   text not null,
+     note          text,
+     cuenta_id     text,
+     sync_state    text not null,
+     updated_at    text not null,
+     deleted_at    text
+   );`,
 ];
 
 /**
