@@ -1,0 +1,58 @@
+# TC-080 / TC-081 — El aviso de presupuesto sale al cruzar el umbral, una vez.
+#
+# El limite es $500 en Comida. La secuencia es 390 (sin aviso), +20 = 410
+# (aviso de 80%), +90 = 500 (aviso de 100%). No se usa 400 exacto para el
+# primer paso porque 400/500 ES el 80%: el umbral se cruza al alcanzarlo, no al
+# pasarlo, y ese caso lo fija progreso.test.ts.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+- assertVisible:
+    id: "screen-lista"
+
+# Limite de $500 en Comida.
+- tapOn:
+    id: "btn-configurar-presupuestos"
+- assertVisible:
+    id: "screen-presupuestos"
+- tapOn:
+    id: "limite-comida"
+- inputText: "500.00"
+- tapOn:
+    id: "btn-guardar"
+- assertVisible:
+    id: "screen-lista"
+- assertVisible:
+    id: "presupuesto-comida"
+
+# $390: 78% del limite. Ningun aviso.
+- runFlow:
+    file: shared/gasto-de-comida.yaml
+    env:
+      MONTO: "390.00"
+- assertNotVisible: "Vas al 80% de Comida"
+
+# +$20 = $410: cruza el 80%.
+- runFlow:
+    file: shared/gasto-de-comida.yaml
+    env:
+      MONTO: "20.00"
+- assertVisible: "Vas al 80% de Comida"
+- tapOn: "OK"
+
+# +$90 = $500: cruza el 100%.
+- runFlow:
+    file: shared/gasto-de-comida.yaml
+    env:
+      MONTO: "90.00"
+- assertVisible: "Te pasaste del presupuesto de Comida"
+- tapOn: "OK"
+
+# TC-081 — el aviso no se repite en el gasto siguiente.
+- runFlow:
+    file: shared/gasto-de-comida.yaml
+    env:
+      MONTO: "10.00"
+- assertNotVisible: "Te pasaste del presupuesto de Comida"
+- assertVisible:
+    id: "presupuesto-comida"

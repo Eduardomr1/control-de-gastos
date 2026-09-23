@@ -17,7 +17,12 @@ export function AgregarScreen() {
   const [note, setNote] = useState('');
   const { data: categories = [] } = useCategorias();
   const [error, setError] = useState<string | null>(null);
-  const mutation = useCrearGasto();
+  // El aviso de presupuesto nombra la categoria, y el nombre lo tiene esta
+  // pantalla, no el hook. Pasarselo evita que gastos tenga que ir a pedir las
+  // categorias por su cuenta para armar una cadena.
+  const mutation = useCrearGasto(
+    (id) => categories.find((c) => c.id === id)?.name ?? id,
+  );
 
   function onSave() {
     try {
