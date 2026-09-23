@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { monthKeyOf, nowLocalIso } from '@/shared/lib/date';
 import { useCategorias } from '@/features/categorias';
 import { useIngresos } from '@/features/ingresos';
+import { usePresupuestos } from '@/features/presupuestos';
 import { deleteExpense, fetchExpenses } from '../api';
 import { agruparEnSecciones } from '../secciones';
 import type { Category, Expense } from '@/types/expense';
@@ -29,7 +30,13 @@ export function useGastos() {
   // mitad de los datos: un balance a medias es un numero equivocado, no un
   // numero incompleto. Ver BUG-006.
   const ingresos = useIngresos();
-  const resultados = [expensesQuery, categoriasQuery, ingresos.query];
+  const presupuestos = usePresupuestos();
+  const resultados = [
+    expensesQuery,
+    categoriasQuery,
+    ingresos.query,
+    presupuestos.query,
+  ];
 
   const eliminar = useMutation({
     mutationFn: deleteExpense,
@@ -56,6 +63,7 @@ export function useGastos() {
     categorias,
     total,
     ingresosDelMes: ingresos.totalDelMes,
+    presupuestos: presupuestos.presupuestos,
     eliminar,
   };
 }

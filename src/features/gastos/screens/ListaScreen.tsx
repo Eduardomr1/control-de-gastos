@@ -10,6 +10,7 @@ import { controlSize, scaledSize } from '@/shared/theme/tipografia';
 import { esFailure, type Failure } from '@/shared/errors';
 import { GAsyncGate, GTexto } from '@/shared/ui';
 import { signOut } from '@/features/auth';
+import { ResumenDePresupuestos, type Presupuesto } from '@/features/presupuestos';
 import { isRemote } from '@/shared/lib/environment';
 import { useGastos } from '../hooks/useGastos';
 import { FilaGasto } from '../components/FilaGasto';
@@ -26,6 +27,7 @@ export function ListaScreen() {
     categorias,
     total,
     ingresosDelMes,
+    presupuestos,
     eliminar,
   } = useGastos();
 
@@ -41,6 +43,7 @@ export function ListaScreen() {
       currentMonth={currentMonth}
       conteo={gastos.length}
       ingresosCents={ingresosDelMes}
+      presupuestos={presupuestos}
       secciones={secciones}
       categorias={categorias}
       total={total}
@@ -131,6 +134,7 @@ function ContenidoLista({
   currentMonth,
   conteo,
   ingresosCents,
+  presupuestos,
   secciones,
   categorias,
   total,
@@ -140,6 +144,7 @@ function ContenidoLista({
   currentMonth: string;
   conteo: number;
   ingresosCents: number;
+  presupuestos: readonly Presupuesto[];
   secciones: ReturnType<typeof useGastos>['secciones'];
   categorias: ReturnType<typeof useGastos>['categorias'];
   total: number;
@@ -155,13 +160,25 @@ function ContenidoLista({
         sections={secciones}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
-          <TotalDelMes
-            currentMonth={currentMonth}
-            totalCents={total}
-            ingresosCents={ingresosCents}
-            conteo={conteo}
-            onSalir={onSalir}
-          />
+          <>
+            <TotalDelMes
+              currentMonth={currentMonth}
+              totalCents={total}
+              ingresosCents={ingresosCents}
+              conteo={conteo}
+              onSalir={onSalir}
+            />
+            {/* Recibe los gastos del mes ya calculados: su consulta y la de
+                presupuestos viajan en el mismo GAsyncGate, asi que las barras
+                nunca aparecen despues del resto con un porcentaje que cambia
+                bajo el pulgar (BUG-006). */}
+            <ResumenDePresupuestos
+              presupuestos={presupuestos}
+              gastosDelMes={secciones.find((s) => s.mes === currentMonth)?.data ?? []}
+              mes={currentMonth}
+              categorias={categorias}
+            />
+          </>
         }
         ListEmptyComponent={<ListaVacia mes={formatMonthKey(currentMonth)} />}
         contentContainerStyle={{ paddingBottom: 120 }}

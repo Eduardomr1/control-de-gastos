@@ -66,6 +66,31 @@ export const MIGRACIONES: readonly string[] = [
      updated_at    text not null,
      deleted_at    text
    );`,
+
+  // 3 — presupuestos por categoría (Fase 2).
+  //
+  // `mes_referencia` nulo significa "vigente todos los meses". Resuelve el
+  // caso normal —500 al mes en Comida, siempre— con UNA fila, no con doce al
+  // año por categoría. Una fila con mes explícito gana sobre la nula: es el
+  // override de diciembre sin tocar el resto del año.
+  //
+  // El gasto acumulado no se guarda: se suma de `gastos`. Un contador
+  // materializado es un segundo lugar donde la verdad puede quedar mal.
+  `create table if not exists presupuestos (
+     id              text primary key not null,
+     category_id     text not null,
+     limite_cents    integer not null check (limite_cents > 0),
+     mes_referencia  text,
+     sync_state      text not null,
+     updated_at      text not null,
+     deleted_at      text
+   );
+   -- Un presupuesto vivo por categoría y periodo. El índice es la garantía:
+   -- sin él, dos altas seguidas dejarían dos límites para la misma categoría y
+   -- la pantalla mostraría el que SQLite devolviera primero.
+   create unique index if not exists presupuestos_categoria_mes_idx
+     on presupuestos (category_id, ifnull(mes_referencia, ''))
+     where deleted_at is null;`,
 ];
 
 /**

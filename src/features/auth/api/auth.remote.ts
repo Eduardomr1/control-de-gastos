@@ -34,5 +34,7 @@ export async function signOut(): Promise<void> {
   await limpiarAlCerrarSesion();
   const { limpiarIngresos } = await import('@/features/ingresos');
   limpiarIngresos();
+  const { limpiarPresupuestos } = await import('@/features/presupuestos');
+  limpiarPresupuestos();
   await supabase().auth.signOut();
 }

@@ -6,6 +6,19 @@ versionado según [SemVer](https://semver.org/lang/es/).
 ## [No publicado]
 
 ### Agregado
+- Presupuesto mensual por categoria, con barra de progreso en la lista y aviso
+  al cruzar el 80% y el 100%. El aviso sale UNA vez: `umbralCruzado` compara el
+  estado de antes contra el de despues en lugar de mirar solo el acumulado, asi
+  que no reaparece en cada gasto posterior al que lo cruzo
+- El aviso es un `Alert` y no una notificacion del sistema. El usuario esta
+  mirando la app en ese instante; una notificacion que aparece con la pantalla
+  enfrente es ruido que ademas se queda en el centro de notificaciones. Las
+  notificaciones programadas llegan con los recurrentes, donde si hay algo que
+  decir con la app cerrada
+- `mes_referencia` nulo significa "todos los meses": el caso normal (500 al mes
+  en Comida, siempre) es UNA fila, no doce al anio por categoria. Una fila con
+  mes explicito gana sobre la nula, que es el override de diciembre sin tocar
+  el resto del anio
 - Ingresos. Alta con fuente y nota, y balance neto del mes (ingresos - gastos)
   como protagonista del encabezado de la lista, con el gasto y el ingreso
   acumulados debajo. El balance negativo se muestra con su signo y en rojo: un
