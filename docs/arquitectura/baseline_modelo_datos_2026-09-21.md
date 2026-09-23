@@ -96,7 +96,7 @@ la fase, no antes:
 |---|---|---|
 | 1 | — | `gastos` (ya aplicada) |
 | 2 | 1 | `ingresos` |
-| 3 | 2 | `presupuestos` |
+| 3 | 2 | `presupuestos` + su indice unico |
 | 4 | 3 | `recurrentes` |
 | 5 | 4 | índice `gastos(occurred_at)` |
 | 6 | 5 | `cuentas` + poblar `cuenta_id` |

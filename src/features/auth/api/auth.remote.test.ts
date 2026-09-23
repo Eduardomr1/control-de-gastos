@@ -28,16 +28,19 @@ jest.mock('@/features/gastos', () => ({
   limpiarAlCerrarSesion: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('@/features/ingresos', () => ({ limpiarIngresos: jest.fn() }));
+jest.mock('@/features/presupuestos', () => ({ limpiarPresupuestos: jest.fn() }));
 
 const supabase = jest.requireMock('@/shared/lib/supabase').supabase();
 const { limpiarAlCerrarSesion } = jest.requireMock('@/features/gastos');
 const { limpiarIngresos } = jest.requireMock('@/features/ingresos');
+const { limpiarPresupuestos } = jest.requireMock('@/features/presupuestos');
 
 beforeEach(() => {
   jest.clearAllMocks();
   supabase.auth.signOut.mockResolvedValue({ error: null });
   limpiarAlCerrarSesion.mockResolvedValue(undefined);
   limpiarIngresos.mockImplementation(() => undefined);
+  limpiarPresupuestos.mockImplementation(() => undefined);
 });
 
 describe('signIn', () => {
@@ -87,6 +90,9 @@ describe('signOut', () => {
     limpiarIngresos.mockImplementation(() => {
       orden.push('limpiar-ingresos');
     });
+    limpiarPresupuestos.mockImplementation(() => {
+      orden.push('limpiar-presupuestos');
+    });
     supabase.auth.signOut.mockImplementation(async () => {
       orden.push('cerrar-sesion-remota');
       return { error: null };
@@ -94,7 +100,12 @@ describe('signOut', () => {
 
     await signOut();
 
-    expect(orden).toEqual(['limpiar-gastos', 'limpiar-ingresos', 'cerrar-sesion-remota']);
+    expect(orden).toEqual([
+      'limpiar-gastos',
+      'limpiar-ingresos',
+      'limpiar-presupuestos',
+      'cerrar-sesion-remota',
+    ]);
   });
 
   /**
@@ -102,9 +113,10 @@ describe('signOut', () => {
    * nueva reabre el agujero por su cuenta: si signOut no la limpia, la
    * siguiente persona que entre en este dispositivo ve datos ajenos.
    */
-  it('no deja ingresos en el dispositivo', async () => {
+  it('no deja ingresos ni presupuestos en el dispositivo', async () => {
     await signOut();
     expect(limpiarIngresos).toHaveBeenCalledTimes(1);
+    expect(limpiarPresupuestos).toHaveBeenCalledTimes(1);
   });
 
   it('propaga si la limpieza local falla, sin cerrar la sesión remota a medias', async () => {

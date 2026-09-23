@@ -289,3 +289,52 @@ los cuatro producían el mismo texto genérico.
 | Pasos | Registrar un ingreso, cerrar sesión y entrar con otra cuenta |
 | Resultado esperado | La copia local de ingresos queda vacía |
 | Nota | BUG-013 se cerró cuando gastos era la única tabla del usuario. Cada tabla nueva reabre el agujero por su cuenta. |
+
+---
+
+## Suite: Presupuestos
+
+### TC-080 — Aviso al cruzar el 80% y el 100%
+**Prioridad:** P1 · **Automatizado** · `.maestro/08-presupuesto-umbral.yaml`
+
+| | |
+|---|---|
+| Precondición | Límite de `500.00` en Comida, mes sin gastos |
+| Pasos | 1. Gastar `390.00` (78%)<br>2. Gastar `20.00` más (82%)<br>3. Gastar `90.00` más (100%) |
+| Resultado esperado | Sin aviso en el paso 1; "Vas al 80% de Comida" en el 2; "Te pasaste del presupuesto de Comida" en el 3 |
+| Nota | No se usa `400.00` exacto en el paso 1: `400/500` **es** el 80%, y el umbral se cruza al alcanzarlo, no al pasarlo. Ese caso lo fija `progreso.test.ts`. |
+
+### TC-081 — El aviso no se repite
+**Prioridad:** P1 · **Automatizado** · `.maestro/08-presupuesto-umbral.yaml` y `progreso.test.ts`
+
+| | |
+|---|---|
+| Pasos | Con el umbral ya cruzado, registrar otro gasto de la misma categoría |
+| Resultado esperado | No aparece ningún aviso |
+| Nota | `umbralCruzado` compara el estado de antes contra el de después en vez de mirar solo el acumulado. Preguntando "¿ya pasé el 80%?" el aviso saldría en cada gasto posterior al primero, y a la tercera vez se deja de leer. |
+
+### TC-082 — El override del mes manda sobre el general
+**Prioridad:** P2 · **Automatizado** · `src/features/presupuestos/progreso.test.ts`
+
+| | |
+|---|---|
+| Pasos | Con `500.00` general en Comida y `1,500.00` para 2026-12, evaluar un gasto de diciembre |
+| Resultado esperado | El límite aplicable es `1,500.00` |
+| Nota | El caso normal —500 al mes, siempre— es una sola fila, no doce al año por categoría. |
+
+### TC-083 — Un límite por categoría y periodo
+**Prioridad:** P1 · **Automatizado** · `src/features/presupuestos/api/presupuestos.local.test.ts`
+
+| | |
+|---|---|
+| Pasos | Fijar `500.00` en Comida y luego `700.00` en Comida |
+| Resultado esperado | Queda un solo presupuesto, de `700.00`, con el mismo id que el primero |
+| Nota | Lo que el usuario hace es "el límite de Comida ahora es 700", no "agrega otro límite". Sin el upsert, la pantalla mostraría el que SQLite devolviera primero. Conservar el id importa para cuando esto sincronice: el servidor debe ver la misma fila cambiando, no un alta nueva por edición. |
+
+### TC-084 — La barra se topa al 100% aunque el gasto no
+**Prioridad:** P2 · Manual
+
+| | |
+|---|---|
+| Pasos | Rebasar el límite de una categoría en un 40% |
+| Resultado esperado | El relleno de la barra llega al 100% y no se sale de la tarjeta; el texto muestra el monto real rebasado, en rojo |

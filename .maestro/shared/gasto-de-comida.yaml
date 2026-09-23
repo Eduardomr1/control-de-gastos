@@ -1,0 +1,20 @@
+# Registra un gasto de Comida por ${MONTO} y vuelve a la lista.
+#
+# Existe para que 08-presupuesto-umbral.yaml no repita cinco veces los mismos
+# seis pasos: lo que ese flujo prueba es la secuencia de umbrales, no como se
+# captura un gasto — eso ya lo cubre 01-agregar-gasto.yaml.
+appId: mx.eduardomaytorena.gastos
+---
+- tapOn:
+    id: "fab-agregar"
+- assertVisible:
+    id: "screen-nuevo-gasto"
+- tapOn:
+    id: "input-monto"
+- inputText: "${MONTO}"
+- tapOn:
+    id: "categoria-comida"
+- tapOn:
+    id: "btn-guardar"
+- assertVisible:
+    id: "screen-lista"
