@@ -171,8 +171,8 @@ create table recurrentes (
   cuenta_id          text,
   nota               text,
   frecuencia         text not null,   -- 'semanal' | 'mensual' | 'anual'
-  proxima_fecha      text not null,
-  ultima_generacion  text,            -- hasta qué fecha ya se generó
+  inicio             text not null,   -- ancla fija del calendario
+  generadas_hasta    text,            -- hasta qué fecha ya se generó
   activo             integer not null default 1,
   sync_state         text not null,
   updated_at         text not null,
@@ -180,12 +180,20 @@ create table recurrentes (
 );
 ```
 
-**`ultima_generacion` es la defensa contra el duplicado**, que es el riesgo
-central de la Fase 3. El job genera desde `ultima_generacion` hasta hoy y avanza
-la marca **en la misma transacción** que inserta el gasto: o quedan los dos o no
-queda ninguno. Reabrir la app tres veces el mismo día no genera nada la segunda
-ni la tercera, porque la marca ya pasó esa fecha — sin tabla de deduplicación ni
-consulta previa. El mismo mecanismo cubre la reapertura tardía: si la app estuvo
+> **Corregido al implementar la Fase 3:** desapareció la columna
+> `proxima_fecha` que este diseño preveía. Se deriva de `inicio` con
+> `proximaOcurrencia`. Guardarla es un segundo lugar donde la verdad puede
+> quedar mal, y basta un cálculo equivocado para que un cobro mensual se corra
+> para siempre. Además, cada ocurrencia se calcula desde `inicio` y no desde la
+> anterior: encadenando, "el 31 de cada mes" se vuelve "el 28 de cada mes" en
+> cuanto pasa por febrero.
+
+**`generadas_hasta` es la defensa contra el duplicado**, que es el riesgo
+central de la Fase 3. El job genera desde `generadas_hasta` hasta hoy y avanza
+la marca **cobro por cobro**, no al final del lote: si la app muere a media
+generación, lo ya creado queda marcado y no se repite al reabrir. Reabrir la app
+tres veces el mismo día no genera nada la segunda ni la tercera, porque la marca
+ya pasó esa fecha — sin tabla de deduplicación ni consulta previa. El mismo mecanismo cubre la reapertura tardía: si la app estuvo
 cerrada dos meses, el rango a generar son esos dos meses.
 
 Alternativa descartada: id determinista del gasto derivado de

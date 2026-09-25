@@ -1,0 +1,56 @@
+# TC-090 / TC-091 — Un recurrente genera su cobro una vez, no una por arranque.
+#
+# Es el criterio de salida de la Fase 3 y el riesgo central de la fase: el job
+# corre al abrir la app, asi que si la deduplicacion fallara, cada reapertura
+# sumaria otro cobro. La asercion va sobre el TOTAL del mes por la misma razon
+# que en 02-double-tap: Maestro no sabe afirmar "exactamente una coincidencia",
+# y el total delata la duplicacion sin ambiguedad.
+#
+# IMPORTANTE: los launchApp de este flujo NO llevan clearState. Reiniciar
+# limpiando el estado probaria lo contrario de lo que se quiere probar.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+- assertVisible:
+    id: "screen-lista"
+
+# Un recurrente mensual de $1,000 que arranca hoy.
+- tapOn:
+    id: "btn-recurrentes"
+- assertVisible:
+    id: "screen-recurrentes"
+- tapOn:
+    id: "input-nombre"
+- inputText: "Renta"
+- tapOn:
+    id: "input-monto"
+- inputText: "1000.00"
+- tapOn:
+    id: "frecuencia-mensual"
+- tapOn:
+    id: "btn-agregar-recurrente"
+
+# El cobro de hoy se materializa al guardar, sin esperar al proximo arranque.
+- tapOn:
+    id: "btn-cancelar"
+- assertVisible:
+    id: "screen-lista"
+- assertVisible:
+    id: "total-mes"
+- assertVisible: "$1,000.00"
+
+# TC-091 — tres reaperturas, un solo cobro.
+- launchApp
+- assertVisible:
+    id: "screen-lista"
+- launchApp
+- assertVisible:
+    id: "screen-lista"
+- launchApp
+- assertVisible:
+    id: "screen-lista"
+
+- assertVisible: "$1,000.00"
+- assertNotVisible: "$2,000.00"
+- assertNotVisible: "$3,000.00"
+- assertNotVisible: "$4,000.00"

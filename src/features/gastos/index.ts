@@ -8,3 +8,6 @@ export { AgregarScreen } from './screens/AgregarScreen';
 export { useGastos } from './hooks/useGastos';
 export { useCrearGasto } from './hooks/useCrearGasto';
 export { limpiarAlCerrarSesion } from './limpiarAlCerrarSesion';
+// Lo usa el generador de recurrentes: un cobro vencido tiene que entrar por la
+// misma puerta que un gasto capturado a mano, no por una propia.
+export { createExpense as crearGasto } from './api';
