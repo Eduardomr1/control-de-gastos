@@ -61,6 +61,7 @@ function AuthGate() {
       <Stack.Screen name="ingreso" options={{ presentation: 'modal' }} />
       <Stack.Screen name="presupuestos" options={{ presentation: 'modal' }} />
       <Stack.Screen name="recurrentes" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="reportes" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }
