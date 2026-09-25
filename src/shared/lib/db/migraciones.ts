@@ -91,6 +91,37 @@ export const MIGRACIONES: readonly string[] = [
    create unique index if not exists presupuestos_categoria_mes_idx
      on presupuestos (category_id, ifnull(mes_referencia, ''))
      where deleted_at is null;`,
+
+  // 4 — movimientos recurrentes (Fase 3).
+  //
+  // Una sola tabla para gastos e ingresos recurrentes, distinguidos por
+  // `tipo`. Dos tablas serían el mismo calendario, el mismo job y la misma
+  // pantalla duplicados para cambiar el signo del movimiento generado.
+  //
+  // NO hay columna `proxima_fecha`, que es lo que pedía el plan: se deriva de
+  // `inicio` con `proximaOcurrencia`. Una columna con la próxima fecha es un
+  // segundo lugar donde la verdad puede quedar mal, y basta un cálculo
+  // equivocado para que un cobro mensual se corra para siempre.
+  //
+  // `generadas_hasta` es la defensa contra el duplicado: avanza en la misma
+  // transacción en que se inserta el movimiento, así que reabrir la app tres
+  // veces el mismo día no genera nada la segunda ni la tercera.
+  `create table if not exists recurrentes (
+     id               text primary key not null,
+     tipo             text not null check (tipo in ('gasto', 'ingreso')),
+     nombre           text not null,
+     amount_cents     integer not null check (amount_cents > 0),
+     currency         text not null,
+     category_id      text,
+     fuente           text,
+     frecuencia       text not null check (frecuencia in ('semanal', 'mensual', 'anual')),
+     inicio           text not null,
+     generadas_hasta  text,
+     activo           integer not null default 1,
+     sync_state       text not null,
+     updated_at       text not null,
+     deleted_at       text
+   );`,
 ];
 
 /**

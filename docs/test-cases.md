@@ -338,3 +338,59 @@ los cuatro producían el mismo texto genérico.
 |---|---|
 | Pasos | Rebasar el límite de una categoría en un 40% |
 | Resultado esperado | El relleno de la barra llega al 100% y no se sale de la tarjeta; el texto muestra el monto real rebasado, en rojo |
+
+---
+
+## Suite: Recurrentes
+
+### TC-090 — El cobro se materializa al vencer
+**Prioridad:** P1 · **Automatizado** · `.maestro/09-recurrente-sin-duplicar.yaml`
+
+| | |
+|---|---|
+| Pasos | Dar de alta un recurrente mensual de `1,000.00` que arranca hoy |
+| Resultado esperado | El gasto aparece en la lista sin reiniciar la app, y el total del mes lo incluye |
+
+### TC-091 — Reabrir la app no duplica el cobro
+**Prioridad:** P1 · **Automatizado** · `.maestro/09-recurrente-sin-duplicar.yaml` y `generador.test.ts`
+
+| | |
+|---|---|
+| Pasos | Con el cobro ya generado, cerrar y reabrir la app tres veces **sin** limpiar estado |
+| Resultado esperado | El total sigue siendo `$1,000.00`; nunca `$2,000.00` ni más |
+| Nota | `generadas_hasta` avanza cobro por cobro, no al final del lote. El flujo E2E no lleva `clearState`: reiniciar limpiando el estado probaría lo contrario de lo que se quiere probar. |
+
+### TC-092 — Reapertura tardía: varios periodos de una vez
+**Prioridad:** P1 · **Automatizado** · `src/features/recurrentes/calendario.test.ts`
+
+| | |
+|---|---|
+| Pasos | Con un recurrente mensual iniciado el 1 de julio y la app cerrada hasta el 20 de septiembre, abrirla |
+| Resultado esperado | Entran tres cobros —1 jul, 1 ago, 1 sep— cada uno con **su** fecha, no los tres con la de hoy |
+| Nota | Un cobro de agosto pertenece al corte de agosto. Fecharlos todos hoy rompería el total de los meses anteriores. |
+
+### TC-093 — "El 31 de cada mes" sobrevive a febrero
+**Prioridad:** P1 · **Automatizado** · `src/features/recurrentes/calendario.test.ts`
+
+| | |
+|---|---|
+| Pasos | Recurrente mensual iniciado el 31 de enero; revisar las cuatro ocurrencias siguientes |
+| Resultado esperado | 28 feb, 31 mar, 30 abr, 31 may |
+| Nota | Es el caso que obliga a calcular cada ocurrencia desde la fecha de inicio y no desde la anterior. Encadenando, el 28 de febrero se vuelve la nueva base y "el 31" se convierte en "el 28" para siempre. |
+
+### TC-094 — Pausar no es borrar
+**Prioridad:** P2 · **Automatizado** · `src/features/recurrentes/api/recurrentes.local.test.ts`
+
+| | |
+|---|---|
+| Pasos | Apagar un recurrente ya generado y volver a encenderlo |
+| Resultado esperado | Conserva su marca de generación y no regenera los cobros del periodo en que estuvo apagado |
+
+### TC-095 — Recordatorio dos días antes
+**Prioridad:** P2 · Manual (programación automatizada en `avisos.test.ts`)
+
+| | |
+|---|---|
+| Pasos | Con un recurrente activo, adelantar la fecha del dispositivo hasta dos días antes del cobro |
+| Resultado esperado | Llega una notificación local con el nombre, el monto y el día del cobro |
+| Nota | El cálculo del momento sí está automatizado; lo que solo se puede verificar en dispositivo es que el sistema operativo la entregue. Los avisos se cancelan y reprograman enteros en cada arranque: sincronizar la lista contra la del sistema cuesta más código que rehacerla. |

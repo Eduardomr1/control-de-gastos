@@ -5,5 +5,5 @@
 
 export { AgregarIngresoScreen } from './screens/AgregarIngresoScreen';
 export { useIngresos } from './hooks/useIngresos';
-export { limpiarIngresos } from './api/ingresos.local';
+export { limpiarIngresos, createIngreso as crearIngreso } from './api/ingresos.local';
 export type { Income } from './types';
