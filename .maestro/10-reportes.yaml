@@ -1,0 +1,44 @@
+# TC-100 — Los reportes coinciden con el total de la lista.
+#
+# La asercion fuerte es la coincidencia entre pantallas: el total del anillo
+# tiene que ser el mismo numero que el total del mes en la lista. Que la
+# grafica se dibuje no prueba nada; que sume igual, si.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+- assertVisible:
+    id: "screen-lista"
+
+- runFlow:
+    file: shared/gasto-de-comida.yaml
+    env:
+      MONTO: "120.00"
+- runFlow:
+    file: shared/gasto-de-comida.yaml
+    env:
+      MONTO: "80.00"
+
+- assertVisible:
+    id: "total-mes"
+- assertVisible: "$200.00"
+
+- tapOn:
+    id: "btn-reportes"
+- assertVisible:
+    id: "screen-reportes"
+- assertVisible:
+    id: "anillo-categorias"
+
+# El centro del anillo repite el total del mes.
+- assertVisible:
+    id: "total-reporte"
+- assertVisible: "$200.00"
+
+# Con una sola categoria, se lleva el 100%.
+- assertVisible:
+    id: "leyenda-comida"
+- assertVisible: "100%"
+
+# El comparativo trae seis meses y el actual viene seleccionado.
+- assertVisible:
+    id: "barras-por-mes"

@@ -287,7 +287,7 @@ Para que las fases siguientes no busquen archivos que no existen:
 | `features/gastos/screens/AddExpenseScreen.tsx` | `screens/AgregarScreen.tsx` | El repo nombra en español |
 | `ingresos-api.ts`, `ingresos-store.ts` | `api/ingresos.local.ts` + `api/index.ts` | Convención de `gastos` y `categorias` |
 | "Estado global de ingresos" (store) | react-query | Zustand se eliminó del stack por estar declarado y sin usar; un store nuevo lo reintroduce |
-| `victory-native` para gráficas | Por confirmar contra RN 0.86 / Expo 57 | Se decide en la Fase 4, no antes |
+| `victory-native` para gráficas | `react-native-svg` y el arco a mano | Victory arrastra Skia, reanimated y gesture-handler: cuatro módulos nativos para dos gráficas estáticas. Y el arco, hecho a mano, se prueba en Node |
 | `notifee` para notificaciones | `expo-notifications` | El proyecto es Expo; notifee exige configuración nativa que expo-notifications ya resuelve |
 
 ---

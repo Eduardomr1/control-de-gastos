@@ -131,6 +131,14 @@ export function TotalDelMes({
           accessibilityLabel="Ver movimientos recurrentes"
           color={colores.acento}
         />
+
+        <Pastilla
+          href="/reportes"
+          testID="btn-reportes"
+          etiqueta="Reportes"
+          accessibilityLabel="Ver reportes"
+          color={colores.acento}
+        />
       </View>
 
       <GTexto variante="caption" color={colores.textoSecundario} style={{ paddingTop: 8 }}>

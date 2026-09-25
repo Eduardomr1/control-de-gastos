@@ -103,9 +103,10 @@ export const MIGRACIONES: readonly string[] = [
   // segundo lugar donde la verdad puede quedar mal, y basta un cálculo
   // equivocado para que un cobro mensual se corra para siempre.
   //
-  // `generadas_hasta` es la defensa contra el duplicado: avanza en la misma
-  // transacción en que se inserta el movimiento, así que reabrir la app tres
-  // veces el mismo día no genera nada la segunda ni la tercera.
+  // `generadas_hasta` es la defensa contra el duplicado: avanza cobro por
+  // cobro, justo después de insertar cada movimiento y no al final del lote,
+  // así que reabrir la app tres veces el mismo día no genera nada la segunda
+  // ni la tercera.
   `create table if not exists recurrentes (
      id               text primary key not null,
      tipo             text not null check (tipo in ('gasto', 'ingreso')),
@@ -122,6 +123,14 @@ export const MIGRACIONES: readonly string[] = [
      updated_at       text not null,
      deleted_at       text
    );`,
+
+  // 5 — indice de fecha en gastos (Fase 4).
+  //
+  // `expenseDb.read()` hace `order by occurred_at desc` en cada lectura, y los
+  // reportes agrupan por mes sobre esa misma columna. Sin indice, SQLite
+  // ordena en memoria cada vez; se nota a partir de unos cientos de filas, que
+  // es justo el volumen con el que un reporte empieza a tener sentido.
+  `create index if not exists gastos_occurred_at_idx on gastos (occurred_at);`,
 ];
 
 /**

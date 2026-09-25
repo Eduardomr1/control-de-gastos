@@ -6,6 +6,21 @@ versionado según [SemVer](https://semver.org/lang/es/).
 ## [No publicado]
 
 ### Agregado
+- Pantalla de reportes: anillo de gasto por categoria con el total al centro, y
+  comparativo de los ultimos seis meses que ademas hace de selector de periodo
+- El anillo se dibuja con `react-native-svg` y veinte lineas de trigonometria
+  propias, no con `victory-native`. Victory exige ademas
+  `@shopify/react-native-skia`, `react-native-reanimated` y
+  `react-native-gesture-handler`: cuatro modulos nativos para dos graficas
+  estaticas sin una sola interaccion. El arco, de paso, se prueba en Node
+- Las barras mes a mes son `View` con ancho porcentual, sin SVG: una barra es un
+  rectangulo y eso ya lo sabe hacer el layout
+- Los meses sin gasto se dibujan en cero en vez de saltarse. Una grafica que
+  salta de julio a septiembre miente sobre la tendencia
+- `percentShare` en `money.ts`: que porcentaje representa una parte de un total.
+  Vive ahi porque redondear es justo lo que el lint prohibe fuera de ese archivo
+- Indice en `gastos.occurred_at` (migracion v5), que es por donde ordenan tanto
+  la lista como las agregaciones del reporte
 - Movimientos recurrentes: renta, suscripciones y quincena se registran solos y
   avisan dos dias antes del cobro. Una sola tabla para gastos e ingresos
   recurrentes, distinguidos por `tipo`: dos tablas serian el mismo calendario,
