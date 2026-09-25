@@ -29,11 +29,13 @@ jest.mock('@/features/gastos', () => ({
 }));
 jest.mock('@/features/ingresos', () => ({ limpiarIngresos: jest.fn() }));
 jest.mock('@/features/presupuestos', () => ({ limpiarPresupuestos: jest.fn() }));
+jest.mock('@/features/recurrentes', () => ({ limpiarRecurrentes: jest.fn() }));
 
 const supabase = jest.requireMock('@/shared/lib/supabase').supabase();
 const { limpiarAlCerrarSesion } = jest.requireMock('@/features/gastos');
 const { limpiarIngresos } = jest.requireMock('@/features/ingresos');
 const { limpiarPresupuestos } = jest.requireMock('@/features/presupuestos');
+const { limpiarRecurrentes } = jest.requireMock('@/features/recurrentes');
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -41,6 +43,7 @@ beforeEach(() => {
   limpiarAlCerrarSesion.mockResolvedValue(undefined);
   limpiarIngresos.mockImplementation(() => undefined);
   limpiarPresupuestos.mockImplementation(() => undefined);
+  limpiarRecurrentes.mockImplementation(() => undefined);
 });
 
 describe('signIn', () => {
@@ -93,6 +96,9 @@ describe('signOut', () => {
     limpiarPresupuestos.mockImplementation(() => {
       orden.push('limpiar-presupuestos');
     });
+    limpiarRecurrentes.mockImplementation(() => {
+      orden.push('limpiar-recurrentes');
+    });
     supabase.auth.signOut.mockImplementation(async () => {
       orden.push('cerrar-sesion-remota');
       return { error: null };
@@ -104,6 +110,7 @@ describe('signOut', () => {
       'limpiar-gastos',
       'limpiar-ingresos',
       'limpiar-presupuestos',
+      'limpiar-recurrentes',
       'cerrar-sesion-remota',
     ]);
   });
@@ -113,10 +120,11 @@ describe('signOut', () => {
    * nueva reabre el agujero por su cuenta: si signOut no la limpia, la
    * siguiente persona que entre en este dispositivo ve datos ajenos.
    */
-  it('no deja ingresos ni presupuestos en el dispositivo', async () => {
+  it('no deja datos de ningun feature en el dispositivo', async () => {
     await signOut();
     expect(limpiarIngresos).toHaveBeenCalledTimes(1);
     expect(limpiarPresupuestos).toHaveBeenCalledTimes(1);
+    expect(limpiarRecurrentes).toHaveBeenCalledTimes(1);
   });
 
   it('propaga si la limpieza local falla, sin cerrar la sesión remota a medias', async () => {

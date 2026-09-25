@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 
 import { useSession } from '@/features/auth';
+import { useArranqueDeRecurrentes } from '@/features/recurrentes';
 import { isRemote } from '@/shared/lib/environment';
 
 const queryClient = new QueryClient({
@@ -35,6 +36,10 @@ export default function RootLayout() {
 function AuthGate() {
   const { userId, loading } = useSession();
   const segments = useSegments();
+  // Los cobros vencidos se materializan al abrir la app, no en segundo plano:
+  // iOS no garantiza la ejecucion periodica en background, y un job que
+  // depende de ella funciona en Android y calla en iOS.
+  useArranqueDeRecurrentes();
 
   useEffect(() => {
     if (!isRemote || loading) return;
@@ -55,6 +60,7 @@ function AuthGate() {
       <Stack.Screen name="add" options={{ presentation: 'modal' }} />
       <Stack.Screen name="ingreso" options={{ presentation: 'modal' }} />
       <Stack.Screen name="presupuestos" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="recurrentes" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }

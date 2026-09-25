@@ -39,6 +39,74 @@ export function monthKeyOf(isoWithOffset: string): MonthKey {
   return `${year}-${month}`;
 }
 
+/**
+ * Componentes literales de un ISO con offset, tal como los escribio el
+ * dispositivo. Existe para poder hacer aritmetica de calendario sin pasar por
+ * `Date`, que normalizaria a UTC y reintroduciria el bug que este modulo
+ * previene.
+ */
+export interface ComponentesLocales {
+  readonly anio: number;
+  readonly mes: number;
+  readonly dia: number;
+  readonly hora: number;
+  readonly minuto: number;
+  readonly segundo: number;
+  /** El offset tal cual, ej. `-07:00` o `Z`. */
+  readonly offset: string;
+}
+
+export function componentesLocales(isoWithOffset: string): ComponentesLocales {
+  const match = ISO_WITH_OFFSET.exec(isoWithOffset);
+  if (!match) {
+    throw new DateError(
+      `Se requiere ISO 8601 con offset explicito, se recibio: "${isoWithOffset}"`,
+    );
+  }
+  const [, anio, mes, dia, hora, minuto, segundo, offset] = match;
+  return {
+    anio: Number(anio),
+    mes: Number(mes),
+    dia: Number(dia),
+    hora: Number(hora),
+    minuto: Number(minuto),
+    segundo: Number(segundo ?? '0'),
+    offset: offset as string,
+  };
+}
+
+/** La operacion inversa de `componentesLocales`. */
+export function isoLocal(c: ComponentesLocales): string {
+  return (
+    `${String(c.anio).padStart(4, '0')}-${pad(c.mes)}-${pad(c.dia)}` +
+    `T${pad(c.hora)}:${pad(c.minuto)}:${pad(c.segundo)}${c.offset}`
+  );
+}
+
+/**
+ * Cuantos dias tiene un mes. `Date.UTC(anio, mes, 0)` es el dia cero del mes
+ * SIGUIENTE, que es el ultimo del pedido; `mes` ya viene 1-based, asi que no
+ * se le resta uno.
+ *
+ * Es lo que hace que "el 31 de cada mes" no se convierta en "el 28 de cada
+ * mes" en cuanto pasa por febrero.
+ */
+export function diasDelMes(anio: number, mes: number): number {
+  return new Date(Date.UTC(anio, mes, 0)).getUTCDate();
+}
+
+/**
+ * Compara dos ISO con offset como INSTANTES, no como cadenas.
+ *
+ * `localeCompare` alcanza mientras todos los registros compartan offset, y
+ * deja de alcanzar en cuanto uno viene de otra zona: las 22:00-07:00 del dia 5
+ * son posteriores a las 02:00+02:00 del dia 6, y ordenadas como texto salen al
+ * reves.
+ */
+export function comparaInstantes(a: string, b: string): number {
+  return Date.parse(a) - Date.parse(b);
+}
+
 /** Timestamp ISO con el offset local del dispositivo. */
 export function nowLocalIso(now: Date = new Date()): string {
   const offsetMinutes = -now.getTimezoneOffset();

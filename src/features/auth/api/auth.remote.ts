@@ -36,5 +36,7 @@ export async function signOut(): Promise<void> {
   limpiarIngresos();
   const { limpiarPresupuestos } = await import('@/features/presupuestos');
   limpiarPresupuestos();
+  const { limpiarRecurrentes } = await import('@/features/recurrentes');
+  limpiarRecurrentes();
   await supabase().auth.signOut();
 }

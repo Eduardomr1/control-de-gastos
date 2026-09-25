@@ -6,6 +6,20 @@ versionado según [SemVer](https://semver.org/lang/es/).
 ## [No publicado]
 
 ### Agregado
+- Movimientos recurrentes: renta, suscripciones y quincena se registran solos y
+  avisan dos dias antes del cobro. Una sola tabla para gastos e ingresos
+  recurrentes, distinguidos por `tipo`: dos tablas serian el mismo calendario,
+  el mismo job y la misma pantalla duplicados para cambiar el signo
+- Cada ocurrencia se calcula desde la fecha de INICIO, no desde la anterior.
+  Encadenando, "el 31 de cada mes" se convierte en "el 28 de cada mes" para
+  siempre en cuanto pasa por febrero, porque el 28 se vuelve la nueva base. Con
+  el inicio como ancla fija, marzo vuelve al 31
+- La marca `generadas_hasta` avanza cobro por cobro, no al final del lote:
+  reabrir la app tres veces el mismo dia no genera nada la segunda ni la
+  tercera, y una app cerrada dos meses recupera los dos cobros con SU fecha
+- `expo-notifications` para los recordatorios, no `notifee` como proponia el
+  plan: el proyecto es Expo, y notifee exige configuracion nativa que el plugin
+  de expo-notifications ya trae resuelta
 - Presupuesto mensual por categoria, con barra de progreso en la lista y aviso
   al cruzar el 80% y el 100%. El aviso sale UNA vez: `umbralCruzado` compara el
   estado de antes contra el de despues en lugar de mirar solo el acumulado, asi

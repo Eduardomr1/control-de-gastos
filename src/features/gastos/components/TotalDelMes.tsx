@@ -116,30 +116,63 @@ export function TotalDelMes({
         {/* El FAB se queda para el gasto, que es la acción frecuente; el
             ingreso se registra dos o tres veces al mes y no merece competir
             por el pulgar. Aquí está donde el usuario ya vino a mirarlo. */}
-        <Link href="/ingreso" asChild>
-          <Pressable
-            testID="btn-agregar-ingreso"
-            accessibilityRole="button"
-            accessibilityLabel="Registrar ingreso"
-            style={{
-              minHeight: 44,
-              justifyContent: 'center',
-              paddingHorizontal: 14,
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: colores.positivo,
-            }}
-          >
-            <GTexto variante="caption" color={colores.positivo} style={{ fontWeight: '600' }}>
-              + Ingreso
-            </GTexto>
-          </Pressable>
-        </Link>
+        <Pastilla
+          href="/ingreso"
+          testID="btn-agregar-ingreso"
+          etiqueta="+ Ingreso"
+          accessibilityLabel="Registrar ingreso"
+          color={colores.positivo}
+        />
+
+        <Pastilla
+          href="/recurrentes"
+          testID="btn-recurrentes"
+          etiqueta="Recurrentes"
+          accessibilityLabel="Ver movimientos recurrentes"
+          color={colores.acento}
+        />
       </View>
 
       <GTexto variante="caption" color={colores.textoSecundario} style={{ paddingTop: 8 }}>
         {conteo === 1 ? '1 gasto registrado' : `${conteo} gastos registrados`}
       </GTexto>
     </View>
+  );
+}
+
+/** Enlace en forma de pastilla. Dos iguales seguidas pedían un solo molde. */
+function Pastilla({
+  href,
+  testID,
+  etiqueta,
+  accessibilityLabel,
+  color,
+}: {
+  href: string;
+  testID: string;
+  etiqueta: string;
+  accessibilityLabel: string;
+  color: string;
+}) {
+  return (
+    <Link href={href} asChild>
+      <Pressable
+        testID={testID}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        style={{
+          minHeight: 44,
+          justifyContent: 'center',
+          paddingHorizontal: 14,
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: color,
+        }}
+      >
+        <GTexto variante="caption" color={color} style={{ fontWeight: '600' }}>
+          {etiqueta}
+        </GTexto>
+      </Pressable>
+    </Link>
   );
 }
