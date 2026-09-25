@@ -394,3 +394,52 @@ los cuatro producían el mismo texto genérico.
 | Pasos | Con un recurrente activo, adelantar la fecha del dispositivo hasta dos días antes del cobro |
 | Resultado esperado | Llega una notificación local con el nombre, el monto y el día del cobro |
 | Nota | El cálculo del momento sí está automatizado; lo que solo se puede verificar en dispositivo es que el sistema operativo la entregue. Los avisos se cancelan y reprograman enteros en cada arranque: sincronizar la lista contra la del sistema cuesta más código que rehacerla. |
+
+---
+
+## Suite: Reportes
+
+### TC-100 — El reporte suma lo mismo que la lista
+**Prioridad:** P1 · **Automatizado** · `.maestro/10-reportes.yaml`
+
+| | |
+|---|---|
+| Pasos | Registrar `120.00` y `80.00` en Comida, abrir Reportes |
+| Resultado esperado | El centro del anillo muestra `$200.00`, igual que el total del mes en la lista, y Comida se lleva el `100%` |
+| Nota | Que la gráfica se dibuje no prueba nada; que sume igual que la otra pantalla, sí. |
+
+### TC-101 — Una sola categoría dibuja un anillo, no un vacío
+**Prioridad:** P1 · **Automatizado** · `src/features/reportes/donut.test.ts`
+
+| | |
+|---|---|
+| Pasos | Con gastos en una sola categoría, abrir Reportes |
+| Resultado esperado | Se ve el anillo completo de ese color |
+| Nota | Un arco de 360° tiene el mismo punto de inicio y de fin, y SVG no sabe qué camino tomar: no pinta nada. El caso se resuelve con dos semicírculos. |
+
+### TC-102 — La categoría mayoritaria se ve mayoritaria
+**Prioridad:** P1 · **Automatizado** · `src/features/reportes/donut.test.ts`
+
+| | |
+|---|---|
+| Pasos | Con un reparto 75/25, revisar el arco de la categoría mayor |
+| Resultado esperado | Ocupa tres cuartos del anillo |
+| Nota | Sin la bandera `largeArc`, SVG dibuja el camino corto y la categoría mayoritaria aparece como la minoritaria. Es el error más caro posible en esta gráfica, y por eso tiene prueba propia. |
+
+### TC-103 — Un mes vacío se dibuja, no se salta
+**Prioridad:** P2 · **Automatizado** · `src/features/reportes/agregados.test.ts`
+
+| | |
+|---|---|
+| Pasos | Con gastos en julio y septiembre pero no en agosto, abrir el comparativo |
+| Resultado esperado | Agosto aparece con barra en cero |
+| Nota | Una gráfica que salta de julio a septiembre miente sobre la tendencia. El mes vacío es información. |
+
+### TC-104 — Rendimiento con volumen
+**Prioridad:** P2 · Manual
+
+| | |
+|---|---|
+| Pasos | Con 500+ gastos registrados, abrir Reportes |
+| Resultado esperado | La pantalla carga en menos de 1s |
+| Nota | La migración v5 indexa `gastos.occurred_at`, que es por donde ordenan tanto la lista como las agregaciones del reporte. |

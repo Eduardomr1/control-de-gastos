@@ -105,6 +105,25 @@ export function percentOf(cents: number, percent: number): number {
   return raw < 0 ? -Math.round(-raw) : Math.round(raw);
 }
 
+/**
+ * Que porcentaje entero representa `parte` de `total`. El inverso de
+ * `percentOf`.
+ *
+ * Vive aqui y no en quien lo necesita porque redondear es justo lo que el lint
+ * del proyecto prohibe fuera de este archivo: `Math.round` sobre dinero suele
+ * delatar un calculo hecho en flotantes. Aqui el redondeo es legitimo -el
+ * resultado es una etiqueta, no un monto- y esta es la frontera autorizada.
+ *
+ * Con total en cero devuelve 0 en vez de NaN: una lista vacia no tiene
+ * reparto, y NaN se propagaria hasta la pantalla.
+ */
+export function percentShare(parteCents: number, totalCents: number): number {
+  assertCents(parteCents);
+  assertCents(totalCents);
+  if (totalCents === 0) return 0;
+  return Math.round((parteCents / totalCents) * 100);
+}
+
 /** Formatea centavos para mostrar. Nunca usar el resultado para calcular. */
 export function formatMoney(
   cents: number,
