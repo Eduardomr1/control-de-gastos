@@ -6,6 +6,19 @@ versionado según [SemVer](https://semver.org/lang/es/).
 ## [No publicado]
 
 ### Agregado
+- Exportacion a CSV y PDF desde Reportes, con selector de periodo y compartido
+  por la hoja nativa del sistema
+- El CSV lleva BOM de UTF-8, escapado RFC 4180 y el monto como numero puro. Las
+  tres cosas fallan en silencio si faltan: sin BOM, Excel en Windows destroza
+  los acentos; una coma sin escapar corre una columna; y `$1,234.56` en una
+  celda es texto y deja de sumarse. Los gastos salen en negativo para que la
+  columna Monto se sume de golpe y de el balance del periodo
+- `expo-print` y `expo-sharing` en vez de `react-native-html-to-pdf` y
+  `react-native-share` como proponia el plan: el proyecto es Expo y estos dos
+  traen su configuracion nativa resuelta en el plugin
+- El HTML del PDF escapa `&`, `<`, `>` y `"`. Una categoria llamada
+  "Ropa & Calzado" dejaria el documento mal formado y el PDF saldria con la
+  tabla partida, sin error de por medio
 - Multi-cuenta: efectivo, debito y credito con saldo propio y consolidado. La
   migracion v6 asigna todos los movimientos existentes a una cuenta "General"
   de id literal `00000000-0000-4000-8000-000000000001`. Literal y no generado al
