@@ -18,6 +18,7 @@ interface Fila {
   fuente: string;
   occurred_at: string;
   note: string | null;
+  cuenta_id: string | null;
   sync_state: string;
   updated_at: string;
   deleted_at: string | null;
@@ -33,6 +34,7 @@ function aIncome(fila: Fila): Income {
     syncState: fila.sync_state as SyncState,
     updatedAt: fila.updated_at,
     ...(fila.note === null ? {} : { note: fila.note }),
+    ...(fila.cuenta_id === null ? {} : { cuentaId: fila.cuenta_id }),
     ...(fila.deleted_at === null ? {} : { deletedAt: fila.deleted_at }),
   };
 }
@@ -40,8 +42,8 @@ function aIncome(fila: Fila): Income {
 function guardarFila(i: Income): void {
   db.runSync(
     `insert or replace into ingresos
-       (id, amount_cents, currency, fuente, occurred_at, note, sync_state, updated_at, deleted_at)
-     values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, amount_cents, currency, fuente, occurred_at, note, cuenta_id, sync_state, updated_at, deleted_at)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       i.id,
       i.amountCents,
@@ -49,6 +51,7 @@ function guardarFila(i: Income): void {
       i.fuente,
       i.occurredAt,
       i.note ?? null,
+      i.cuentaId ?? null,
       i.syncState,
       i.updatedAt,
       i.deletedAt ?? null,

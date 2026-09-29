@@ -225,8 +225,10 @@ hacen reversible:
 
 - El id de "General" es **fijo y literal**, no generado al vuelo: la migración
   se puede reejecutar y el `down` sabe exactamente qué borrar.
-- `cuenta_id` ya existe como columna nullable desde v2; el `update` no es un
-  `alter table` sobre una tabla poblada.
+- En `ingresos`, `cuenta_id` ya existía nullable desde v2. En `gastos` hay que
+  agregarla, pero `alter table add column` de una columna **nullable** es
+  metadato en SQLite: no reescribe la tabla, así que da igual cuántos gastos
+  haya.
 - El `down` es `update ... set cuenta_id = null` más `drop table cuentas`. No
   pierde un solo movimiento.
 

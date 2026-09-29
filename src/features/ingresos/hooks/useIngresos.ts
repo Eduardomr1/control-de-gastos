@@ -14,5 +14,8 @@ export function useIngresos() {
   const mes = monthKeyOf(nowLocalIso());
   const query = useQuery({ queryKey: ['ingresos'], queryFn: fetchIngresos });
 
-  return { query, totalDelMes: ingresosDelMes(query.data ?? [], mes) };
+  const ingresos = query.data ?? [];
+  // La lista cruda ademas del total: los saldos por cuenta necesitan TODOS
+  // los ingresos, no solo los del mes en curso.
+  return { query, ingresos, totalDelMes: ingresosDelMes(ingresos, mes) };
 }

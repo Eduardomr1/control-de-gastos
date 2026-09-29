@@ -24,6 +24,7 @@ module.exports = {
     '!src/features/ingresos/store/ingresosDb.ts',
     '!src/features/presupuestos/store/presupuestosDb.ts',
     '!src/features/recurrentes/store/recurrentesDb.ts',
+    '!src/features/cuentas/store/cuentasDb.ts',
     // scheduler.ts solo entrega al sistema operativo lo que avisos.ts decidio.
     // No hay una sola decision de negocio dentro; la que si hay, se prueba.
     '!src/shared/lib/notifications/scheduler.ts',
@@ -42,6 +43,7 @@ module.exports = {
     '!src/features/presupuestos/index.ts',
     '!src/features/recurrentes/index.ts',
     '!src/features/reportes/index.ts',
+    '!src/features/cuentas/index.ts',
     '!src/shared/ui/index.ts',
     // colores.ts es un objeto de datos sin lógica, y los componentes que lo
     // consumen (GTexto, GBoton, GCampo) no tienen prueba unitaria propia por
@@ -61,6 +63,7 @@ module.exports = {
     '!src/features/presupuestos/hooks/**',
     '!src/features/recurrentes/hooks/**',
     '!src/features/reportes/hooks/**',
+    '!src/features/cuentas/hooks/**',
   ],
   coverageThreshold: {
     global: { branches: 80, functions: 90, lines: 90, statements: 90 },

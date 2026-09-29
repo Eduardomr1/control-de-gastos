@@ -1,0 +1,59 @@
+# TC-110 — Saldo por cuenta y consolidado.
+#
+# Con una sola cuenta no hay nada que probar: el saldo de General seria el
+# mismo numero que el balance del mes. El caso empieza a existir cuando el
+# usuario crea la segunda, y eso es lo que monta este flujo.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+- assertVisible:
+    id: "screen-lista"
+
+# Con una sola cuenta, las tarjetas de saldo no se dibujan.
+- assertNotVisible:
+    id: "tarjetas-de-saldo"
+
+# Segunda cuenta, con $2,000 de saldo inicial. Se entra por la pastilla del
+# encabezado y no por "Administrar" de las tarjetas: ese boton vive DENTRO de
+# las tarjetas, que con una sola cuenta no se dibujan.
+- tapOn:
+    id: "btn-cuentas"
+- assertVisible:
+    id: "screen-cuentas"
+- tapOn:
+    id: "input-nombre-cuenta"
+- inputText: "Debito"
+- tapOn:
+    id: "input-saldo-inicial"
+- inputText: "2000.00"
+- tapOn:
+    id: "tipo-debito"
+- tapOn:
+    id: "btn-agregar-cuenta"
+- tapOn:
+    id: "btn-cancelar"
+
+# Ahora si aparecen las tarjetas, y el consolidado es $2,000.
+- assertVisible:
+    id: "screen-lista"
+- assertVisible:
+    id: "tarjetas-de-saldo"
+- assertVisible: "$2,000.00"
+
+# Un gasto de $500 cargado a Debito baja SU saldo, no el de General.
+- tapOn:
+    id: "fab-agregar"
+- tapOn:
+    id: "input-monto"
+- inputText: "500.00"
+- tapOn:
+    id: "categoria-comida"
+- assertVisible:
+    id: "selector-cuenta"
+- tapOn: "Debito"
+- tapOn:
+    id: "btn-guardar"
+
+- assertVisible:
+    id: "screen-lista"
+- assertVisible: "$1,500.00"

@@ -9,9 +9,8 @@ import type { SyncState } from '@/types/expense';
  * `shared/` lo necesita. El día que ingresos sincronice contra Supabase y
  * `sync-engine.ts` tenga que resolver sus conflictos, se mueve — no antes.
  *
- * `cuentaId` existe como columna en SQLite desde v2 pero no como campo aquí:
- * hasta la Fase 5 no hay cuentas, y un campo que nadie lee solo da a elegir
- * entre dejarlo indefinido o inventarle un valor.
+ * `cuentaId` llegó en la Fase 5. La columna existía desde v2, nullable y sin
+ * usar, justo para que esa fase solo tuviera que poblarla.
  */
 export interface Income {
   readonly id: string;
@@ -22,6 +21,7 @@ export interface Income {
   /** ISO 8601 con offset explícito. Nunca una fecha "desnuda". */
   readonly occurredAt: string;
   readonly note?: string;
+  readonly cuentaId?: string;
   readonly syncState: SyncState;
   readonly updatedAt: string;
   readonly deletedAt?: string;
