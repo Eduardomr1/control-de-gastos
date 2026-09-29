@@ -28,6 +28,9 @@ module.exports = {
     // scheduler.ts solo entrega al sistema operativo lo que avisos.ts decidio.
     // No hay una sola decision de negocio dentro; la que si hay, se prueba.
     '!src/shared/lib/notifications/scheduler.ts',
+    // compartir.ts escribe el archivo y lo entrega al sistema operativo. El
+    // contenido lo arman csv.ts y pdf.ts, que son puros y si se prueban.
+    '!src/shared/lib/exporters/compartir.ts',
     '!src/features/gastos/store/syncQueueInstance.ts',
     '!src/features/gastos/api/sync.ts',
     '!src/features/gastos/api/expenses.remote.ts',

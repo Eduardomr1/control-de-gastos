@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,6 +10,8 @@ import { GAsyncGate, GTexto } from '@/shared/ui';
 
 import { AnilloDeCategorias } from '../components/AnilloDeCategorias';
 import { BarrasPorMes } from '../components/BarrasPorMes';
+import { ExportarModal } from '../components/ExportarModal';
+import { useExportar } from '../hooks/useExportar';
 import { useReportes } from '../hooks/useReportes';
 
 /**
@@ -19,7 +22,9 @@ import { useReportes } from '../hooks/useReportes';
  * para elegir entre los seis valores que ya están en pantalla.
  */
 export function ReportesScreen() {
-  const { mes, setMes, resultados, tajadas, barras } = useReportes();
+  const { mes, setMes, resultados, tajadas, barras, exportable } = useReportes();
+  const [exportarAbierto, setExportarAbierto] = useState(false);
+  const { exportando, exportar } = useExportar(exportable);
 
   return (
     <SafeAreaView
@@ -54,8 +59,33 @@ export function ReportesScreen() {
           Reportes
         </GTexto>
 
-        <View style={{ width: scaledSize(58) }} />
+        <Pressable
+          testID="btn-exportar"
+          accessibilityRole="button"
+          accessibilityLabel="Exportar movimientos"
+          onPress={() => setExportarAbierto(true)}
+          style={{ minHeight: 44, minWidth: scaledSize(58), justifyContent: 'center' }}
+        >
+          <GTexto
+            variante="body"
+            color={colores.acento}
+            style={{ fontWeight: '600', textAlign: 'right' }}
+          >
+            Exportar
+          </GTexto>
+        </Pressable>
       </View>
+
+      <ExportarModal
+        visible={exportarAbierto}
+        meses={exportable.meses}
+        exportando={exportando}
+        onCerrar={() => setExportarAbierto(false)}
+        onExportar={async (rango, formato) => {
+          await exportar(rango, formato);
+          setExportarAbierto(false);
+        }}
+      />
 
       <GAsyncGate
         resultados={resultados}

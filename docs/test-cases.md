@@ -500,3 +500,60 @@ los cuatro producían el mismo texto genérico.
 |---|---|
 | Pasos | Intentar eliminar la cuenta General |
 | Resultado esperado | Sigue ahí |
+
+---
+
+## Suite: Exportación
+
+### TC-120 — El flujo de exportación llega hasta la hoja de compartir
+**Prioridad:** P2 · **Automatizado** · `.maestro/12-exportar.yaml`
+
+| | |
+|---|---|
+| Pasos | Abrir Reportes → Exportar, revisar las opciones, cancelar, y luego generar el CSV |
+| Resultado esperado | El modal ofrece periodo y los dos formatos; cancelar y generar devuelven a Reportes sin error |
+| Nota | Maestro no lee el sistema de archivos del dispositivo, así que el contenido del archivo no se puede verificar desde aquí. Por eso el CSV y el HTML del PDF tienen 31 casos unitarios propios. |
+
+### TC-121 — El CSV abre bien en una hoja de cálculo
+**Prioridad:** P1 · Manual (contenido automatizado en `csv.test.ts`)
+
+| | |
+|---|---|
+| Pasos | Exportar un rango de 3 meses y abrir el CSV en Excel y en Google Sheets |
+| Resultado esperado | Los acentos se leen bien, las columnas no están corridas y la suma de la columna Monto da el balance del periodo |
+| Nota | Tres cosas lo hacen posible, y las tres fallan en silencio si faltan: el BOM de UTF-8 (sin él Excel en Windows destroza los acentos), el escapado RFC 4180 (una coma sin escapar corre una columna) y el monto como número puro (`$1,234.56` en una celda es texto y deja de sumarse). |
+
+### TC-122 — Los gastos salen en negativo
+**Prioridad:** P1 · **Automatizado** · `src/shared/lib/exporters/csv.test.ts`
+
+| | |
+|---|---|
+| Resultado esperado | La columna Monto trae los gastos en negativo y los ingresos en positivo |
+| Nota | Puesta así, la columna se suma de golpe en la hoja y da el balance del periodo, que es lo primero que alguien hace con un export. |
+
+### TC-123 — Un nombre con caracteres especiales no rompe el PDF
+**Prioridad:** P1 · **Automatizado** · `src/shared/lib/exporters/pdf.test.ts`
+
+| | |
+|---|---|
+| Pasos | Exportar con una categoría llamada `Ropa & Calzado` y una nota con `<` |
+| Resultado esperado | El PDF sale completo, con el texto tal cual |
+| Nota | Sin escapar, el documento queda mal formado y el PDF sale con la tabla partida o con texto desaparecido — sin error de por medio. |
+
+### TC-124 — El rango incluye el último día completo
+**Prioridad:** P1 · **Automatizado** · `src/features/reportes/exportar.test.ts`
+
+| | |
+|---|---|
+| Pasos | Exportar septiembre con un gasto registrado el 30 a las 23:59 |
+| Resultado esperado | El gasto entra en el archivo |
+| Nota | Quien pide "hasta el 30" quiere el 30 completo. Comparar contra su medianoche dejaría fuera todo lo de ese día. |
+
+### TC-125 — El PDF se ve igual sin red
+**Prioridad:** P2 · Manual
+
+| | |
+|---|---|
+| Pasos | Exportar en PDF con el dispositivo en modo avión |
+| Resultado esperado | El documento sale con su formato completo |
+| Nota | Los estilos van en línea y no hay fuentes ni hojas remotas: el motor de impresión renderiza sin red, y una hoja de estilos externa que no cargue dejaría el PDF sin formato. |
