@@ -80,3 +80,46 @@ describe('reconcile', () => {
     expect(reconcile([], [])).toEqual([]);
   });
 });
+
+/**
+ * `cuentaId` existe en SQLite desde la migración v6 pero no en el esquema de
+ * Supabase. Un gasto que vuelve del servidor llega sin cuenta; si ese gasto
+ * gana el conflicto —y gana cada vez que se edita desde otro dispositivo—, el
+ * movimiento perdería su cuenta en silencio y el saldo cambiaría solo.
+ *
+ * El servidor no tiene una opinión distinta sobre la cuenta: no tiene ninguna.
+ */
+describe('reconcile con campos que el servidor no conoce', () => {
+  it('conserva la cuenta local cuando gana la versión remota', () => {
+    const local = [
+      expense({ cuentaId: 'cuenta-efectivo', updatedAt: '2026-01-15T12:00:00.000Z' }),
+    ];
+    const remote = [expense({ amountCents: 9999, updatedAt: '2026-01-15T18:00:00.000Z' })];
+
+    const [fusionado] = reconcile(local, remote);
+    expect(fusionado?.amountCents).toBe(9999);
+    expect(fusionado?.cuentaId).toBe('cuenta-efectivo');
+  });
+
+  it('no inventa cuenta cuando el local tampoco la tenía', () => {
+    const merged = reconcile(
+      [expense({ updatedAt: '2026-01-15T12:00:00.000Z' })],
+      [expense({ updatedAt: '2026-01-15T18:00:00.000Z' })],
+    );
+    expect(merged[0]?.cuentaId).toBeUndefined();
+  });
+
+  it('el gasto remoto nuevo entra tal cual, sin cuenta', () => {
+    const merged = reconcile([], [expense({ id: 'nuevo' })]);
+    expect(merged[0]?.cuentaId).toBeUndefined();
+  });
+
+  /** Si el local gana, su cuenta viaja con él sin necesitar el rescate. */
+  it('conserva la cuenta cuando gana la versión local', () => {
+    const merged = reconcile(
+      [expense({ cuentaId: 'cuenta-debito', updatedAt: '2026-01-15T18:00:00.000Z' })],
+      [expense({ updatedAt: '2026-01-15T12:00:00.000Z' })],
+    );
+    expect(merged[0]?.cuentaId).toBe('cuenta-debito');
+  });
+});

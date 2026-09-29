@@ -76,10 +76,33 @@ export function reconcile(
 
   for (const incoming of remote) {
     const existing = byId.get(incoming.id);
+    if (!existing) {
+      byId.set(incoming.id, incoming);
+      continue;
+    }
     byId.set(
       incoming.id,
-      existing ? resolveConflict(existing, incoming).winner : incoming,
+      conservarCamposLocales(existing, resolveConflict(existing, incoming).winner),
     );
   }
   return [...byId.values()];
+}
+
+/**
+ * Devuelve al ganador los campos que el servidor todavia no conoce.
+ *
+ * `cuentaId` existe en SQLite desde la migracion v6 pero no en el esquema de
+ * Supabase: un gasto que vuelve del servidor llega SIN cuenta. Si ese gasto
+ * gana el conflicto -y gana cada vez que se edita desde otro dispositivo-, el
+ * movimiento perderia su cuenta en silencio y el saldo de esa cuenta cambiaria
+ * solo. Perder un campo no es resolver un conflicto: el servidor no tiene una
+ * opinion distinta sobre la cuenta, simplemente no tiene ninguna.
+ *
+ * ponytail: un solo campo, escrito a mano. Cuando sean tres, esto pide una
+ * lista de "campos locales" recorrida en bucle; cuando el esquema remoto los
+ * tenga, pide borrarse entero.
+ */
+function conservarCamposLocales(local: Expense, ganador: Expense): Expense {
+  if (ganador.cuentaId !== undefined || local.cuentaId === undefined) return ganador;
+  return { ...ganador, cuentaId: local.cuentaId };
 }

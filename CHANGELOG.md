@@ -6,6 +6,24 @@ versionado según [SemVer](https://semver.org/lang/es/).
 ## [No publicado]
 
 ### Agregado
+- Multi-cuenta: efectivo, debito y credito con saldo propio y consolidado. La
+  migracion v6 asigna todos los movimientos existentes a una cuenta "General"
+  de id literal `00000000-0000-4000-8000-000000000001`. Literal y no generado al
+  vuelo: es lo que hace reversible la migracion, porque el `down` sabe
+  exactamente que borrar
+- `migraciones.sqlite.test.ts`: las migraciones corren contra un SQLite de
+  verdad (`node:sqlite`) y verifican que la v6 no pierde ni un centavo ni una
+  fila de una base que ya tenia datos. Es el criterio de salida de la fase y no
+  hay forma de comprobarlo sin ejecutar el SQL. Por eso el CI pasa de Node 20 a
+  Node 22
+- `reconcile` conserva la cuenta local cuando gana la version remota.
+  `cuenta_id` existe en SQLite pero no en el esquema de Supabase, asi que lo que
+  vuelve del servidor llega sin cuenta: sin este rescate, el saldo de una cuenta
+  cambiaria solo tras cada sincronizacion. El servidor no tiene una opinion
+  distinta sobre la cuenta, simplemente no tiene ninguna
+- El selector de cuenta y las tarjetas de saldo no se dibujan con una sola
+  cuenta: un selector con una opcion solo confirma lo obvio, y el saldo de
+  General seria el balance del mes repetido
 - Pantalla de reportes: anillo de gasto por categoria con el total al centro, y
   comparativo de los ultimos seis meses que ademas hace de selector de periodo
 - El anillo se dibuja con `react-native-svg` y veinte lineas de trigonometria
@@ -71,6 +89,8 @@ versionado según [SemVer](https://semver.org/lang/es/).
 - Categorías Compras y Salud (migración `0002`)
 
 ### Cambiado
+- El CI corre en Node 22 en vez de Node 20, porque `node:sqlite` -con el que se
+  verifica la migracion de cuentas- llego en la 22
 - El esquema de SQLite se mueve de `features/gastos/store/expenseDb.ts` a
   `shared/lib/db/`. El archivo `gastos.db` es uno solo y su `user_version`
   tambien: con una lista de migraciones por feature, dos listas competirian por

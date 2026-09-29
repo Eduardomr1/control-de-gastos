@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SelectorDeCuenta, useCuentas } from '@/features/cuentas';
 import { MoneyError, parseAmount } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { scaledSize, typography } from '@/shared/theme/tipografia';
@@ -16,8 +17,15 @@ export function AgregarIngresoScreen() {
   const [amount, setAmount] = useState('');
   const [fuente, setFuente] = useState<string>(FUENTES[0]);
   const [note, setNote] = useState('');
+  const [cuentaId, setCuentaId] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
+  const { cuentas } = useCuentas();
   const mutation = useCrearIngreso();
+
+  // La primera cuenta manda mientras el usuario no elija otra. Con una sola
+  // cuenta el selector ni se dibuja, y aun asi el movimiento queda asignado:
+  // la columna nunca nace vacia.
+  const cuentaElegida = cuentaId ?? cuentas[0]?.id;
 
   function onSave() {
     try {
@@ -37,6 +45,7 @@ export function AgregarIngresoScreen() {
         fuente,
         occurredAt: draftOccurredAt(),
         ...(nota ? { note: nota } : {}),
+        ...(cuentaElegida ? { cuentaId: cuentaElegida } : {}),
       });
     } catch (e) {
       setError(e instanceof MoneyError ? e.message : 'Monto inválido');
@@ -171,6 +180,12 @@ export function AgregarIngresoScreen() {
             })}
           </View>
         </View>
+
+        <SelectorDeCuenta
+          cuentas={cuentas}
+          seleccionada={cuentaElegida}
+          onSeleccionar={setCuentaId}
+        />
 
         <GCampo
           testID="input-nota"

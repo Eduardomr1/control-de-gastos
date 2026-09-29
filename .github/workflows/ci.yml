@@ -18,9 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 22, no 20: `migraciones.sqlite.test.ts` corre las migraciones
+      # contra el SQLite que Node trae incorporado (`node:sqlite`), disponible
+      # desde la 22. Es la unica forma de verificar que la migracion de cuentas
+      # no pierde un movimiento sin ejecutar el SQL de verdad.
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Instalar dependencias
@@ -54,7 +58,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Instalar dependencias

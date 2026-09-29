@@ -131,6 +131,49 @@ export const MIGRACIONES: readonly string[] = [
   // ordena en memoria cada vez; se nota a partir de unos cientos de filas, que
   // es justo el volumen con el que un reporte empieza a tener sentido.
   `create index if not exists gastos_occurred_at_idx on gastos (occurred_at);`,
+
+  // 6 — cuentas (Fase 5). La única migración que escribe sobre filas que ya
+  // tienen datos de usuarios reales.
+  //
+  // Tres cosas la hacen reversible:
+  //
+  //  * El id de "General" es fijo y literal, no generado al vuelo. La
+  //    migración se puede reejecutar y un `down` sabría exactamente qué
+  //    borrar, en vez de tener que adivinar cuál de las cuentas la creó ella.
+  //  * `alter table add column` de una columna NULLABLE es metadato en SQLite:
+  //    no reescribe la tabla, así que no importa cuántos gastos haya.
+  //  * Ningún movimiento se borra ni se mueve. Solo se les llena una columna
+  //    que estaba vacía; el `down` es ponerla en null y soltar la tabla.
+  //
+  // `strftime` y no una fecha fija: el `updated_at` tiene que ser el instante
+  // en que el dispositivo aplicó la migración. Sale con `Z`, que es un offset
+  // explícito válido y lo que el dominio exige.
+  `alter table gastos add column cuenta_id text;
+
+   create table if not exists cuentas (
+     id                   text primary key not null,
+     nombre               text not null,
+     tipo                 text not null check (tipo in ('efectivo', 'debito', 'credito')),
+     saldo_inicial_cents  integer not null default 0,
+     currency             text not null,
+     sync_state           text not null,
+     updated_at           text not null,
+     deleted_at           text
+   );
+
+   insert or ignore into cuentas
+     (id, nombre, tipo, saldo_inicial_cents, currency, sync_state, updated_at, deleted_at)
+   values
+     ('00000000-0000-4000-8000-000000000001', 'General', 'efectivo', 0, 'MXN',
+      'synced', strftime('%Y-%m-%dT%H:%M:%SZ', 'now'), null);
+
+   update gastos
+     set cuenta_id = '00000000-0000-4000-8000-000000000001'
+     where cuenta_id is null;
+
+   update ingresos
+     set cuenta_id = '00000000-0000-4000-8000-000000000001'
+     where cuenta_id is null;`,
 ];
 
 /**

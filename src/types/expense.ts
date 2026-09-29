@@ -7,6 +7,10 @@
  *   hace el sync idempotente (el servidor reconoce el id y no duplica).
  * - `deletedAt` implementa soft delete: sin él, un borrado offline es
  *   indistinguible de un registro que aún no ha sincronizado.
+ * - `cuentaId` es opcional en el tipo aunque la migración v6 lo llene en toda
+ *   fila existente: el backend remoto todavía no tiene la columna, así que un
+ *   gasto que vuelve de Supabase llega sin ella. `reconcile` conserva el valor
+ *   local en ese caso; ver `sync-engine.ts`.
  */
 
 export type SyncState = 'pending' | 'synced' | 'conflict';
@@ -19,6 +23,8 @@ export interface Expense {
   /** ISO 8601 con offset explícito. Nunca una fecha "desnuda". */
   readonly occurredAt: string;
   readonly note?: string;
+  /** Cuenta a la que se cargó. Ausente solo en lo que llega del backend. */
+  readonly cuentaId?: string;
   readonly syncState: SyncState;
   readonly updatedAt: string;
   readonly deletedAt?: string;

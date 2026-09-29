@@ -30,12 +30,14 @@ jest.mock('@/features/gastos', () => ({
 jest.mock('@/features/ingresos', () => ({ limpiarIngresos: jest.fn() }));
 jest.mock('@/features/presupuestos', () => ({ limpiarPresupuestos: jest.fn() }));
 jest.mock('@/features/recurrentes', () => ({ limpiarRecurrentes: jest.fn() }));
+jest.mock('@/features/cuentas', () => ({ limpiarCuentas: jest.fn() }));
 
 const supabase = jest.requireMock('@/shared/lib/supabase').supabase();
 const { limpiarAlCerrarSesion } = jest.requireMock('@/features/gastos');
 const { limpiarIngresos } = jest.requireMock('@/features/ingresos');
 const { limpiarPresupuestos } = jest.requireMock('@/features/presupuestos');
 const { limpiarRecurrentes } = jest.requireMock('@/features/recurrentes');
+const { limpiarCuentas } = jest.requireMock('@/features/cuentas');
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -44,6 +46,7 @@ beforeEach(() => {
   limpiarIngresos.mockImplementation(() => undefined);
   limpiarPresupuestos.mockImplementation(() => undefined);
   limpiarRecurrentes.mockImplementation(() => undefined);
+  limpiarCuentas.mockImplementation(() => undefined);
 });
 
 describe('signIn', () => {
@@ -99,6 +102,9 @@ describe('signOut', () => {
     limpiarRecurrentes.mockImplementation(() => {
       orden.push('limpiar-recurrentes');
     });
+    limpiarCuentas.mockImplementation(() => {
+      orden.push('limpiar-cuentas');
+    });
     supabase.auth.signOut.mockImplementation(async () => {
       orden.push('cerrar-sesion-remota');
       return { error: null };
@@ -111,6 +117,7 @@ describe('signOut', () => {
       'limpiar-ingresos',
       'limpiar-presupuestos',
       'limpiar-recurrentes',
+      'limpiar-cuentas',
       'cerrar-sesion-remota',
     ]);
   });
@@ -125,6 +132,7 @@ describe('signOut', () => {
     expect(limpiarIngresos).toHaveBeenCalledTimes(1);
     expect(limpiarPresupuestos).toHaveBeenCalledTimes(1);
     expect(limpiarRecurrentes).toHaveBeenCalledTimes(1);
+    expect(limpiarCuentas).toHaveBeenCalledTimes(1);
   });
 
   it('propaga si la limpieza local falla, sin cerrar la sesión remota a medias', async () => {

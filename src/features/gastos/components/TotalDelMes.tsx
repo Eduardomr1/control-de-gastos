@@ -139,6 +139,17 @@ export function TotalDelMes({
           accessibilityLabel="Ver reportes"
           color={colores.acento}
         />
+
+        {/* Siempre visible, aunque las tarjetas de saldo no se dibujen: con
+            una sola cuenta, el boton "Administrar" de esas tarjetas no existe,
+            y sin este no habria por donde crear la segunda. */}
+        <Pastilla
+          href="/cuentas"
+          testID="btn-cuentas"
+          etiqueta="Cuentas"
+          accessibilityLabel="Administrar cuentas"
+          color={colores.acento}
+        />
       </View>
 
       <GTexto variante="caption" color={colores.textoSecundario} style={{ paddingTop: 8 }}>

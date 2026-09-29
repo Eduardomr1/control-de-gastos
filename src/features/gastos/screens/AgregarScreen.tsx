@@ -8,6 +8,7 @@ import { colores } from '@/shared/theme/colores';
 import { scaledSize, typography } from '@/shared/theme/tipografia';
 import { GBoton, GCampo, GTexto } from '@/shared/ui';
 import { useCategorias } from '@/features/categorias';
+import { SelectorDeCuenta, useCuentas } from '@/features/cuentas';
 import { draftOccurredAt } from '../api';
 import { useCrearGasto } from '../hooks/useCrearGasto';
 
@@ -15,7 +16,9 @@ export function AgregarScreen() {
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState<string>('comida');
   const [note, setNote] = useState('');
+  const [cuentaId, setCuentaId] = useState<string | undefined>();
   const { data: categories = [] } = useCategorias();
+  const { cuentas } = useCuentas();
   const [error, setError] = useState<string | null>(null);
   // El aviso de presupuesto nombra la categoria, y el nombre lo tiene esta
   // pantalla, no el hook. Pasarselo evita que gastos tenga que ir a pedir las
@@ -23,6 +26,11 @@ export function AgregarScreen() {
   const mutation = useCrearGasto(
     (id) => categories.find((c) => c.id === id)?.name ?? id,
   );
+
+  // La primera cuenta manda mientras el usuario no elija otra. Con una sola
+  // cuenta el selector ni se dibuja, y aun asi el movimiento queda asignado:
+  // la columna nunca nace vacia.
+  const cuentaElegida = cuentaId ?? cuentas[0]?.id;
 
   function onSave() {
     try {
@@ -39,6 +47,7 @@ export function AgregarScreen() {
         categoryId,
         occurredAt: draftOccurredAt(),
         ...(nota ? { note: nota } : {}),
+        ...(cuentaElegida ? { cuentaId: cuentaElegida } : {}),
       });
     } catch (e) {
       setError(e instanceof MoneyError ? e.message : 'Monto inválido');
@@ -182,6 +191,12 @@ export function AgregarScreen() {
             })}
           </View>
         </View>
+
+        <SelectorDeCuenta
+          cuentas={cuentas}
+          seleccionada={cuentaElegida}
+          onSeleccionar={setCuentaId}
+        />
 
         <GCampo
           testID="input-nota"

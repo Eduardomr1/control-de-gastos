@@ -443,3 +443,60 @@ los cuatro producían el mismo texto genérico.
 | Pasos | Con 500+ gastos registrados, abrir Reportes |
 | Resultado esperado | La pantalla carga en menos de 1s |
 | Nota | La migración v5 indexa `gastos.occurred_at`, que es por donde ordenan tanto la lista como las agregaciones del reporte. |
+
+---
+
+## Suite: Cuentas
+
+### TC-110 — La migración no pierde un solo movimiento
+**Prioridad:** P1 · **Automatizado** · `src/shared/lib/db/migraciones.sqlite.test.ts`
+
+| | |
+|---|---|
+| Precondición | Base en `user_version = 1` con 8 gastos de montos irregulares |
+| Pasos | Aplicar todas las migraciones hasta la v6 |
+| Resultado esperado | `count(*)` y `sum(amount_cents)` idénticos antes y después; los 8 quedan en la cuenta General; la suma agrupada por cuenta es exactamente el total previo |
+| Nota | Es el criterio de salida de la Fase 5 y no hay forma de verificarlo sin ejecutar el SQL. La suite corre las migraciones contra el SQLite que trae Node (`node:sqlite`), que es otro binario pero el mismo dialecto. Por eso el CI pasó de Node 20 a 22. |
+
+### TC-111 — La migración es reversible
+**Prioridad:** P1 · **Automatizado** · `src/shared/lib/db/migraciones.sqlite.test.ts`
+
+| | |
+|---|---|
+| Pasos | Aplicar la v6 y revertirla: `cuenta_id` a null, borrar General, bajar `user_version` |
+| Resultado esperado | El total y el conteo vuelven a ser los de antes; no queda ninguna cuenta |
+| Nota | El id de General es literal y no generado al vuelo justo por esto: con un id aleatorio, el `down` tendría que adivinar cuál de las cuentas la creó la migración. |
+
+### TC-112 — Saldo por cuenta y consolidado
+**Prioridad:** P1 · **Automatizado** · `.maestro/11-cuentas.yaml` y `saldos.test.ts`
+
+| | |
+|---|---|
+| Pasos | Crear una segunda cuenta con `2,000.00` de saldo inicial y cargarle un gasto de `500.00` |
+| Resultado esperado | El consolidado pasa de `$2,000.00` a `$1,500.00`; el saldo de General no cambia |
+
+### TC-113 — Un movimiento sin cuenta se cuenta en General
+**Prioridad:** P1 · **Automatizado** · `src/features/cuentas/saldos.test.ts`
+
+| | |
+|---|---|
+| Pasos | Con un gasto sin `cuentaId` —como los que vuelven de Supabase—, calcular los saldos |
+| Resultado esperado | Suma en General |
+| Nota | Dejarlo fuera de todos los saldos haría que la suma de las cuentas no cuadrara con el total, que es justo el invariante que esta fase promete. |
+
+### TC-114 — Sincronizar no borra la cuenta del movimiento
+**Prioridad:** P1 · **Automatizado** · `src/shared/lib/reconcile.test.ts`
+
+| | |
+|---|---|
+| Pasos | Editar un gasto en otro dispositivo y sincronizar |
+| Resultado esperado | Gana la versión remota, pero el gasto conserva su cuenta local |
+| Nota | `cuenta_id` existe en SQLite pero no en el esquema de Supabase, así que lo que vuelve del servidor llega sin cuenta. El servidor no tiene una opinión distinta sobre la cuenta: no tiene ninguna. Sin este rescate, el saldo de una cuenta cambiaría solo tras cada sincronización. |
+
+### TC-115 — La cuenta General no se puede eliminar
+**Prioridad:** P2 · **Automatizado** · `src/features/cuentas/api/cuentas.local.test.ts`
+
+| | |
+|---|---|
+| Pasos | Intentar eliminar la cuenta General |
+| Resultado esperado | Sigue ahí |
