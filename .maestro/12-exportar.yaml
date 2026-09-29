@@ -1,0 +1,49 @@
+# TC-120 — El flujo de exportacion llega hasta la hoja de compartir.
+#
+# Lo que este flujo puede probar es la navegacion: que el modal abra, que
+# ofrezca los periodos y los dos formatos, y que generar el archivo no truene.
+# Lo que NO puede probar es el contenido del archivo -Maestro no lee el sistema
+# de archivos del dispositivo- y por eso el CSV y el HTML del PDF tienen 31
+# casos unitarios propios. Ver TC-121.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+- assertVisible:
+    id: "screen-lista"
+
+- runFlow:
+    file: shared/gasto-de-comida.yaml
+    env:
+      MONTO: "250.00"
+
+- tapOn:
+    id: "btn-reportes"
+- assertVisible:
+    id: "screen-reportes"
+
+- tapOn:
+    id: "btn-exportar"
+- assertVisible:
+    id: "modal-exportar"
+- assertVisible:
+    id: "rango-todo"
+- assertVisible:
+    id: "btn-exportar-csv"
+- assertVisible:
+    id: "btn-exportar-pdf"
+
+# Cancelar no deja la pantalla en un estado raro.
+- tapOn:
+    id: "btn-cerrar-exportar"
+- assertVisible:
+    id: "screen-reportes"
+- assertNotVisible:
+    id: "modal-exportar"
+
+# Generar el CSV cierra el modal y devuelve a Reportes sin error.
+- tapOn:
+    id: "btn-exportar"
+- tapOn:
+    id: "btn-exportar-csv"
+- assertVisible:
+    id: "screen-reportes"
