@@ -11,6 +11,7 @@ import { esFailure, type Failure } from '@/shared/errors';
 import { GAsyncGate, GTexto } from '@/shared/ui';
 import { signOut } from '@/features/auth';
 import { ResumenDePresupuestos, type Presupuesto } from '@/features/presupuestos';
+import { TarjetasDeSaldo, type SaldoDeCuenta } from '@/features/cuentas';
 import { isRemote } from '@/shared/lib/environment';
 import { useGastos } from '../hooks/useGastos';
 import { FilaGasto } from '../components/FilaGasto';
@@ -28,6 +29,7 @@ export function ListaScreen() {
     total,
     ingresosDelMes,
     presupuestos,
+    saldos,
     eliminar,
   } = useGastos();
 
@@ -44,6 +46,7 @@ export function ListaScreen() {
       conteo={gastos.length}
       ingresosCents={ingresosDelMes}
       presupuestos={presupuestos}
+      saldos={saldos}
       secciones={secciones}
       categorias={categorias}
       total={total}
@@ -135,6 +138,7 @@ function ContenidoLista({
   conteo,
   ingresosCents,
   presupuestos,
+  saldos,
   secciones,
   categorias,
   total,
@@ -145,6 +149,7 @@ function ContenidoLista({
   conteo: number;
   ingresosCents: number;
   presupuestos: readonly Presupuesto[];
+  saldos: readonly SaldoDeCuenta[];
   secciones: ReturnType<typeof useGastos>['secciones'];
   categorias: ReturnType<typeof useGastos>['categorias'];
   total: number;
@@ -168,6 +173,10 @@ function ContenidoLista({
               conteo={conteo}
               onSalir={onSalir}
             />
+            {/* Con una sola cuenta no se dibuja: el saldo de General seria el
+                mismo numero que el balance de arriba, repetido. */}
+            <TarjetasDeSaldo saldos={saldos} />
+
             {/* Recibe los gastos del mes ya calculados: su consulta y la de
                 presupuestos viajan en el mismo GAsyncGate, asi que las barras
                 nunca aparecen despues del resto con un porcentaje que cambia

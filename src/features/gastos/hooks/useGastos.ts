@@ -4,6 +4,7 @@ import { monthKeyOf, nowLocalIso } from '@/shared/lib/date';
 import { useCategorias } from '@/features/categorias';
 import { useIngresos } from '@/features/ingresos';
 import { usePresupuestos } from '@/features/presupuestos';
+import { saldosPorCuenta, useCuentas } from '@/features/cuentas';
 import { deleteExpense, fetchExpenses } from '../api';
 import { agruparEnSecciones } from '../secciones';
 import type { Category, Expense } from '@/types/expense';
@@ -31,11 +32,13 @@ export function useGastos() {
   // numero incompleto. Ver BUG-006.
   const ingresos = useIngresos();
   const presupuestos = usePresupuestos();
+  const cuentas = useCuentas();
   const resultados = [
     expensesQuery,
     categoriasQuery,
     ingresos.query,
     presupuestos.query,
+    cuentas.query,
   ];
 
   const eliminar = useMutation({
@@ -64,6 +67,9 @@ export function useGastos() {
     total,
     ingresosDelMes: ingresos.totalDelMes,
     presupuestos: presupuestos.presupuestos,
+    // Sobre TODOS los gastos e ingresos, no solo los del mes: un saldo es
+    // acumulado desde que existe la cuenta, no un corte mensual.
+    saldos: saldosPorCuenta(cuentas.cuentas, expenses, ingresos.ingresos),
     eliminar,
   };
 }
