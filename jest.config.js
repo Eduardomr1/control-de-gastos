@@ -25,6 +25,7 @@ module.exports = {
     '!src/features/presupuestos/store/presupuestosDb.ts',
     '!src/features/recurrentes/store/recurrentesDb.ts',
     '!src/features/cuentas/store/cuentasDb.ts',
+    '!src/features/metas/store/metasDb.ts',
     // scheduler.ts solo entrega al sistema operativo lo que avisos.ts decidio.
     // No hay una sola decision de negocio dentro; la que si hay, se prueba.
     '!src/shared/lib/notifications/scheduler.ts',

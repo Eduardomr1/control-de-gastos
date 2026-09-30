@@ -2,13 +2,13 @@ import { Link } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import type { MonthKey } from '@/shared/lib/date';
+import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
-import { GTexto } from '@/shared/ui';
+import { GBarraDeProgreso, GTexto } from '@/shared/ui';
 import type { Category, Expense } from '@/types/expense';
 
-import { gastoPorCategoria, presupuestoVigente } from '../progreso';
+import { fraccionUsada, gastoPorCategoria, presupuestoVigente } from '../progreso';
 import type { Presupuesto } from '../types';
-import { BarraDePresupuesto } from './BarraDePresupuesto';
 
 /**
  * Las barras del mes, una por categoría con límite.
@@ -84,15 +84,32 @@ export function ResumenDePresupuestos({
           Sin límites fijados. Ponlos y la app avisa al 80% y al 100%.
         </GTexto>
       ) : (
-        conLimite.map(({ categoria, vigente }) => (
-          <BarraDePresupuesto
-            key={categoria.id}
-            nombre={categoria.name}
-            gastadoCents={gastado.get(categoria.id) ?? 0}
-            limiteCents={vigente?.limiteCents ?? 0}
-          />
-        ))
+        conLimite.map(({ categoria, vigente }) => {
+          const gastadoCents = gastado.get(categoria.id) ?? 0;
+          const limiteCents = vigente?.limiteCents ?? 0;
+          return (
+            <GBarraDeProgreso
+              key={categoria.id}
+              testID={`presupuesto-${categoria.id}`}
+              etiqueta={categoria.name}
+              detalle={`${formatMoney(gastadoCents)} de ${formatMoney(limiteCents)}`}
+              actualCents={gastadoCents}
+              objetivoCents={limiteCents}
+              color={colorDeAvance(fraccionUsada(gastadoCents, limiteCents))}
+            />
+          );
+        })
       )}
     </View>
   );
+}
+
+/**
+ * Ambar al 80% y rojo al pasarse. El ambar no esta en la paleta porque solo
+ * lo usa esta barra: un color de un solo uso se queda como literal donde vive
+ * (ver el comentario de `colores.ts`).
+ */
+function colorDeAvance(fraccion: number): string {
+  if (fraccion >= 1) return colores.error;
+  return fraccion >= 0.8 ? '#D97706' : colores.acento;
 }
