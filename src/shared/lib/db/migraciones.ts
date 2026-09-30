@@ -174,6 +174,25 @@ export const MIGRACIONES: readonly string[] = [
    update ingresos
      set cuenta_id = '00000000-0000-4000-8000-000000000001'
      where cuenta_id is null;`,
+
+  // 7 — metas de ahorro (Fase 7).
+  //
+  // `actual_cents` es una columna y no la suma de una tabla `aportes`, lo que
+  // contradice el criterio de presupuestos y saldos —calcular, nunca
+  // materializar— y a proposito: aqui no hay de donde derivarlo. Un aporte a
+  // una meta no es un gasto ni un ingreso, asi que la suma no existe en
+  // ninguna otra tabla. El dia que se pida "historial de aportes", la tabla se
+  // agrega y esta columna pasa a ser cache.
+  `create table if not exists metas_ahorro (
+     id              text primary key not null,
+     nombre          text not null,
+     objetivo_cents  integer not null check (objetivo_cents > 0),
+     actual_cents    integer not null default 0,
+     fecha_limite    text,
+     sync_state      text not null,
+     updated_at      text not null,
+     deleted_at      text
+   );`,
 ];
 
 /**

@@ -1,34 +1,45 @@
 import { View } from 'react-native';
 
-import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
-import { GTexto } from '@/shared/ui';
+import { scaledSize } from '@/shared/theme/tipografia';
 
-import { fraccionUsada } from '../progreso';
+import { GTexto } from './GTexto';
 
 /**
- * Una categoría con su límite y lo que va gastado.
+ * Avance de una cantidad hacia una meta.
+ *
+ * Vive en `shared/ui` porque la usan dos features con lecturas opuestas:
+ * pasarse del presupuesto es malo y pasarse de la meta de ahorro es bueno. Lo
+ * que comparten no es el significado sino la geometría, y por eso el color y
+ * los textos los decide quien la monta.
  *
  * El relleno se topa al 100% pero el texto no: rebasar se anuncia con el monto
  * y con el color, no dejando que la barra se salga de la tarjeta. Quien va en
  * 140% necesita ver cuánto se pasó, y una barra que sobresale no lo dice.
  */
-export function BarraDePresupuesto({
-  nombre,
-  gastadoCents,
-  limiteCents,
+export function GBarraDeProgreso({
+  etiqueta,
+  detalle,
+  actualCents,
+  objetivoCents,
+  color,
+  testID,
 }: {
-  nombre: string;
-  gastadoCents: number;
-  limiteCents: number;
+  etiqueta: string;
+  /** Lo que se lee a la derecha, ej. "$410.00 de $500.00". */
+  detalle: string;
+  actualCents: number;
+  objetivoCents: number;
+  color: string;
+  testID?: string;
 }) {
-  const fraccion = fraccionUsada(gastadoCents, limiteCents);
-  const porcentaje = Math.min(fraccion, 1) * 100;
-  const color =
-    fraccion >= 1 ? colores.error : fraccion >= 0.8 ? '#D97706' : colores.acento;
+  // Con objetivo en cero el progreso no existe, y dividir daría Infinity: la
+  // barra saldría llena o en NaN según el orden de las operaciones.
+  const fraccion = objetivoCents <= 0 ? 0 : actualCents / objetivoCents;
+  const porcentaje = Math.min(Math.max(fraccion, 0), 1) * 100;
 
   return (
-    <View style={{ gap: 6 }} testID={`presupuesto-${nombre.toLowerCase()}`}>
+    <View style={{ gap: 6 }} {...(testID === undefined ? {} : { testID })}>
       <View
         style={{
           flexDirection: 'row',
@@ -38,10 +49,10 @@ export function BarraDePresupuesto({
         }}
       >
         <GTexto variante="caption" color={colores.texto} style={{ fontWeight: '600' }}>
-          {nombre}
+          {etiqueta}
         </GTexto>
         <GTexto variante="caption" color={color}>
-          {`${formatMoney(gastadoCents)} de ${formatMoney(limiteCents)}`}
+          {detalle}
         </GTexto>
       </View>
 
@@ -50,19 +61,19 @@ export function BarraDePresupuesto({
           hay texto dentro, pero la regla no distingue y tampoco debería. */}
       <View
         style={{
-          minHeight: 8,
+          minHeight: scaledSize(8, 1.5),
           borderRadius: 999,
           backgroundColor: colores.borde,
           overflow: 'hidden',
         }}
         accessibilityRole="progressbar"
-        accessibilityLabel={`${nombre}: ${formatMoney(gastadoCents)} de ${formatMoney(limiteCents)}`}
-        accessibilityValue={{ min: 0, max: limiteCents, now: gastadoCents }}
+        accessibilityLabel={`${etiqueta}: ${detalle}`}
+        accessibilityValue={{ min: 0, max: objetivoCents, now: actualCents }}
       >
         <View
           style={{
             width: `${porcentaje}%`,
-            minHeight: 8,
+            minHeight: scaledSize(8, 1.5),
             borderRadius: 999,
             backgroundColor: color,
           }}
