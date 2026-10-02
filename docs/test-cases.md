@@ -557,3 +557,34 @@ los cuatro producían el mismo texto genérico.
 | Pasos | Exportar en PDF con el dispositivo en modo avión |
 | Resultado esperado | El documento sale con su formato completo |
 | Nota | Los estilos van en línea y no hay fuentes ni hojas remotas: el motor de impresión renderiza sin red, y una hoja de estilos externa que no cargue dejaría el PDF sin formato. |
+
+---
+
+## Suite: Metas de ahorro
+
+### TC-130 — Tres aportes suman su total
+**Prioridad:** P1 · **Automatizado** · `.maestro/13-metas.yaml` y `metas.local.test.ts`
+
+| | |
+|---|---|
+| Pasos | Crear una meta de `1,000.00` y aportar `300.00`, `300.00` y `500.00` |
+| Resultado esperado | El progreso muestra `$300.00`, `$600.00` y `$1,100.00` de `$1,000.00` |
+| Nota | Aportar recibe el **monto** del aporte, no el nuevo total. Con el total, el cálculo quedaría del lado de la pantalla y dos aportes rápidos partirían del mismo valor viejo. |
+
+### TC-131 — Rebasar la meta no desborda la barra
+**Prioridad:** P1 · Manual (el dato, automatizado en `metas.local.test.ts`)
+
+| | |
+|---|---|
+| Pasos | Aportar más de lo que falta para el objetivo |
+| Resultado esperado | La barra llega al 100% y no se sale de la tarjeta; el texto muestra el monto real (`$1,100.00 de $1,000.00`) y aparece "Meta cumplida" en verde |
+| Nota | El dato no se topa —toparlo silenciaría dinero que el usuario sí apartó—; se topa la barra al dibujar. Es la misma `GBarraDeProgreso` de presupuestos con el color al revés: allá pasarse es malo, aquí es la buena noticia. |
+
+### TC-132 — La fecha límite tiene que existir
+**Prioridad:** P2 · **Automatizado** · `metas.local.test.ts` y `date.test.ts`
+
+| | |
+|---|---|
+| Pasos | Crear una meta con fecha límite `2027-02-30` |
+| Resultado esperado | Se rechaza con un mensaje en el formulario |
+| Nota | Tiene la forma correcta y no es un día. `Date.parse` la aceptaría y la recorrería en silencio al 2 de marzo. |

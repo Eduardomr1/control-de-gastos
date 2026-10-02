@@ -6,6 +6,17 @@ versionado según [SemVer](https://semver.org/lang/es/).
 ## [No publicado]
 
 ### Agregado
+- Metas de ahorro con objetivo, fecha limite opcional y aportes manuales. El
+  aporte recibe el MONTO y no el nuevo total, para que dos aportes seguidos se
+  sumen en vez de pisarse, y el acumulado no se topa en el objetivo: toparlo
+  silenciaria dinero que el usuario si aparto. La que se topa es la barra
+- El aporte no se descuenta de ninguna cuenta, aunque el plan lo dejaba como
+  opcion: obligaria a registrarlo como gasto -y apartar no es gastar- o a
+  inventar un tipo de movimiento que ninguna pantalla sabe mostrar
+- `GBarraDeProgreso` en `shared/ui`, compartida por presupuestos y metas con el
+  color al reves: alla pasarse es malo, aqui es la buena noticia
+- `esFechaDelCalendario` en `date.ts`: "2026-02-30" tiene la forma correcta y
+  no es un dia, y `Date.parse` lo recorreria en silencio al 2 de marzo
 - Exportacion a CSV y PDF desde Reportes, con selector de periodo y compartido
   por la hoja nativa del sistema
 - El CSV lleva BOM de UTF-8, escapado RFC 4180 y el monto como numero puro. Las

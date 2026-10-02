@@ -1,5 +1,6 @@
 import {
   DateError,
+  esFechaDelCalendario,
   formatDayShort,
   formatMonthName,
   formatMonthKey,
@@ -121,5 +122,40 @@ describe('formatMonthName', () => {
 
   it('rechaza una clave malformada', () => {
     expect(() => formatMonthName('2026-13-01')).toThrow(DateError);
+  });
+});
+
+describe('esFechaDelCalendario', () => {
+  it('acepta un dia que existe', () => {
+    expect(esFechaDelCalendario('2026-09-23')).toBe(true);
+  });
+
+  /**
+   * Tiene la forma correcta y no es una fecha. `Date.parse` la aceptaria y la
+   * recorreria en silencio al 2 de marzo.
+   */
+  it('rechaza el 30 de febrero', () => {
+    expect(esFechaDelCalendario('2026-02-30')).toBe(false);
+  });
+
+  it('acepta el 29 de febrero solo en bisiesto', () => {
+    expect(esFechaDelCalendario('2028-02-29')).toBe(true);
+    expect(esFechaDelCalendario('2027-02-29')).toBe(false);
+  });
+
+  it('rechaza el mes 13 y el mes cero', () => {
+    expect(esFechaDelCalendario('2026-13-01')).toBe(false);
+    expect(esFechaDelCalendario('2026-00-10')).toBe(false);
+  });
+
+  it('rechaza el dia cero', () => {
+    expect(esFechaDelCalendario('2026-09-00')).toBe(false);
+  });
+
+  it('rechaza otros formatos', () => {
+    expect(esFechaDelCalendario('23/09/2026')).toBe(false);
+    expect(esFechaDelCalendario('2026-9-3')).toBe(false);
+    expect(esFechaDelCalendario('2026-09-23T10:00:00-07:00')).toBe(false);
+    expect(esFechaDelCalendario('')).toBe(false);
   });
 });

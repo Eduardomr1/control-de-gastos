@@ -8,6 +8,7 @@
  * viejo.
  */
 
+import { DateError, esFechaDelCalendario } from '@/shared/lib/date';
 import { crearRepositorio, type Disco } from '@/shared/lib/db/repositorioLocal';
 import { generarId } from '@/shared/lib/id';
 import { MoneyError, sumCents } from '@/shared/lib/money';
@@ -27,6 +28,12 @@ export async function fetchMetas(): Promise<Meta[]> {
 export async function crearMeta(input: NewMetaInput): Promise<Meta> {
   if (input.objetivoCents <= 0) {
     throw new MoneyError('El objetivo debe ser mayor a cero');
+  }
+  // La fecha llega de un campo de texto, no de un selector: se valida aqui y
+  // no solo en la pantalla, porque "2026-02-30" tiene la forma correcta y no
+  // es un dia.
+  if (input.fechaLimite !== undefined && !esFechaDelCalendario(input.fechaLimite)) {
+    throw new DateError('La fecha limite no es un dia valido (AAAA-MM-DD)');
   }
 
   const meta: Meta = {

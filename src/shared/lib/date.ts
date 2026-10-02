@@ -96,6 +96,22 @@ export function diasDelMes(anio: number, mes: number): number {
 }
 
 /**
+ * Si un `YYYY-MM-DD` capturado a mano es un dia que existe.
+ *
+ * Revisa el formato y ademas que el dia quepa en su mes: "2026-02-30" tiene la
+ * forma correcta y no es una fecha. `Date.parse` lo aceptaria y lo recorreria
+ * en silencio al 2 de marzo, que es justo el tipo de error que no se ve.
+ */
+export function esFechaDelCalendario(texto: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(texto);
+  if (!match) return false;
+  const anio = Number(match[1]);
+  const mes = Number(match[2]);
+  const dia = Number(match[3]);
+  return mes >= 1 && mes <= 12 && dia >= 1 && dia <= diasDelMes(anio, mes);
+}
+
+/**
  * Compara dos ISO con offset como INSTANTES, no como cadenas.
  *
  * `localeCompare` alcanza mientras todos los registros compartan offset, y
