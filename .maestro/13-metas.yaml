@@ -1,0 +1,52 @@
+# TC-130 / TC-131 — Tres aportes suman su total, y rebasar la meta no desborda.
+#
+# El criterio de salida de la Fase 7 es que el progreso coincida con la suma de
+# los aportes. La asercion va sobre el texto "X de Y" y no sobre la barra:
+# Maestro no mide anchos, y el texto es el que dice el monto real aunque la
+# barra ya este topada.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+- assertVisible:
+    id: "screen-lista"
+
+- tapOn:
+    id: "btn-metas"
+- assertVisible:
+    id: "screen-metas"
+
+- tapOn:
+    id: "input-nombre-meta"
+- inputText: "Viaje"
+- tapOn:
+    id: "input-objetivo"
+- inputText: "1000.00"
+- tapOn:
+    id: "btn-crear-meta"
+- assertVisible: "$0.00 de $1,000.00"
+
+# Tres aportes: 300 + 300 + 500 = 1,100. Los ids de la meta son UUID, asi que
+# los selectores van por expresion regular.
+- tapOn:
+    id: "input-aporte-.*"
+- inputText: "300.00"
+- tapOn:
+    id: "btn-aportar-.*"
+- assertVisible: "$300.00 de $1,000.00"
+
+- tapOn:
+    id: "input-aporte-.*"
+- inputText: "300.00"
+- tapOn:
+    id: "btn-aportar-.*"
+- assertVisible: "$600.00 de $1,000.00"
+
+# TC-131 — el tercero rebasa el objetivo. El monto no se topa: se ve $1,100.
+- tapOn:
+    id: "input-aporte-.*"
+- inputText: "500.00"
+- tapOn:
+    id: "btn-aportar-.*"
+- assertVisible: "$1,100.00 de $1,000.00"
+- assertVisible: "Meta cumplida"
+- takeScreenshot: meta-rebasada
