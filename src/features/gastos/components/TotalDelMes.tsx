@@ -150,6 +150,14 @@ export function TotalDelMes({
           accessibilityLabel="Administrar cuentas"
           color={colores.acento}
         />
+
+        <Pastilla
+          href="/metas"
+          testID="btn-metas"
+          etiqueta="Metas"
+          accessibilityLabel="Ver metas de ahorro"
+          color={colores.acento}
+        />
       </View>
 
       <GTexto variante="caption" color={colores.textoSecundario} style={{ paddingTop: 8 }}>
@@ -159,7 +167,7 @@ export function TotalDelMes({
   );
 }
 
-/** Enlace en forma de pastilla. Dos iguales seguidas pedían un solo molde. */
+/** Enlace en forma de pastilla. Cinco iguales seguidas pedían un solo molde. */
 function Pastilla({
   href,
   testID,

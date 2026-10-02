@@ -31,6 +31,7 @@ jest.mock('@/features/ingresos', () => ({ limpiarIngresos: jest.fn() }));
 jest.mock('@/features/presupuestos', () => ({ limpiarPresupuestos: jest.fn() }));
 jest.mock('@/features/recurrentes', () => ({ limpiarRecurrentes: jest.fn() }));
 jest.mock('@/features/cuentas', () => ({ limpiarCuentas: jest.fn() }));
+jest.mock('@/features/metas', () => ({ limpiarMetas: jest.fn() }));
 
 const supabase = jest.requireMock('@/shared/lib/supabase').supabase();
 const { limpiarAlCerrarSesion } = jest.requireMock('@/features/gastos');
@@ -38,6 +39,7 @@ const { limpiarIngresos } = jest.requireMock('@/features/ingresos');
 const { limpiarPresupuestos } = jest.requireMock('@/features/presupuestos');
 const { limpiarRecurrentes } = jest.requireMock('@/features/recurrentes');
 const { limpiarCuentas } = jest.requireMock('@/features/cuentas');
+const { limpiarMetas } = jest.requireMock('@/features/metas');
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -47,6 +49,7 @@ beforeEach(() => {
   limpiarPresupuestos.mockImplementation(() => undefined);
   limpiarRecurrentes.mockImplementation(() => undefined);
   limpiarCuentas.mockImplementation(() => undefined);
+  limpiarMetas.mockImplementation(() => undefined);
 });
 
 describe('signIn', () => {
@@ -105,6 +108,9 @@ describe('signOut', () => {
     limpiarCuentas.mockImplementation(() => {
       orden.push('limpiar-cuentas');
     });
+    limpiarMetas.mockImplementation(() => {
+      orden.push('limpiar-metas');
+    });
     supabase.auth.signOut.mockImplementation(async () => {
       orden.push('cerrar-sesion-remota');
       return { error: null };
@@ -118,6 +124,7 @@ describe('signOut', () => {
       'limpiar-presupuestos',
       'limpiar-recurrentes',
       'limpiar-cuentas',
+      'limpiar-metas',
       'cerrar-sesion-remota',
     ]);
   });
@@ -133,6 +140,7 @@ describe('signOut', () => {
     expect(limpiarPresupuestos).toHaveBeenCalledTimes(1);
     expect(limpiarRecurrentes).toHaveBeenCalledTimes(1);
     expect(limpiarCuentas).toHaveBeenCalledTimes(1);
+    expect(limpiarMetas).toHaveBeenCalledTimes(1);
   });
 
   it('propaga si la limpieza local falla, sin cerrar la sesión remota a medias', async () => {

@@ -1,3 +1,4 @@
+import { DateError } from '@/shared/lib/date';
 import { MoneyError } from '@/shared/lib/money';
 
 import {
@@ -28,6 +29,13 @@ describe('crearMeta', () => {
     expect(con.fechaLimite).toBe('2027-06-30');
     limpiarMetas();
     expect('fechaLimite' in (await crearMeta(viaje))).toBe(false);
+  });
+
+  it('rechaza una fecha limite que no existe', async () => {
+    await expect(crearMeta({ ...viaje, fechaLimite: '2027-02-30' })).rejects.toBeInstanceOf(
+      DateError,
+    );
+    expect(await fetchMetas()).toEqual([]);
   });
 
   it('rechaza el objetivo en cero y el negativo', async () => {

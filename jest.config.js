@@ -48,6 +48,7 @@ module.exports = {
     '!src/features/recurrentes/index.ts',
     '!src/features/reportes/index.ts',
     '!src/features/cuentas/index.ts',
+    '!src/features/metas/index.ts',
     '!src/shared/ui/index.ts',
     // colores.ts es un objeto de datos sin lógica, y los componentes que lo
     // consumen (GTexto, GBoton, GCampo) no tienen prueba unitaria propia por
@@ -68,6 +69,7 @@ module.exports = {
     '!src/features/recurrentes/hooks/**',
     '!src/features/reportes/hooks/**',
     '!src/features/cuentas/hooks/**',
+    '!src/features/metas/hooks/**',
   ],
   coverageThreshold: {
     global: { branches: 80, functions: 90, lines: 90, statements: 90 },
