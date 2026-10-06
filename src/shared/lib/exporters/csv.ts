@@ -18,7 +18,7 @@ import type { FilaExportable } from './filas';
  * caracteres no ASCII salen ilegibles. Tres bytes que deciden si el archivo se
  * puede leer o no.
  */
-export const BOM = '﻿';
+export const BOM = '\uFEFF';
 
 const ENCABEZADOS = ['Fecha', 'Tipo', 'Concepto', 'Cuenta', 'Monto', 'Nota'] as const;
 
