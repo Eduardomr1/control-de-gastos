@@ -32,6 +32,11 @@ module.exports = {
     // compartir.ts escribe el archivo y lo entrega al sistema operativo. El
     // contenido lo arman csv.ts y pdf.ts, que son puros y si se prueban.
     '!src/shared/lib/exporters/compartir.ts',
+    // ocr/index.ts solo llama al binding nativo; lo que puede fallar en
+    // silencio vive en normalizar.ts, que si se prueba.
+    '!src/shared/lib/ocr/index.ts',
+    // El corpus es un arreglo de datos de prueba, no codigo.
+    '!src/features/recibos/__fixtures__/**',
     '!src/features/gastos/store/syncQueueInstance.ts',
     '!src/features/gastos/api/sync.ts',
     '!src/features/gastos/api/expenses.remote.ts',
