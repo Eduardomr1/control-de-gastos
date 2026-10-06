@@ -39,21 +39,19 @@ const fallas = resultados
 
 describe('parser contra el corpus', () => {
   /**
-   * PENDIENTE: la meta del plan es 7 de cada 10 (45/64) y hoy van 43/64. Esto
-   * es un PISO contra regresiones con el valor medido al cerrar la sesion del
-   * 2026-09-23, no la meta. Cuando el parser mejore, se sube el piso; cuando
-   * pase de 45, este bloque se reemplaza por la prueba del 70%.
+   * Criterio de salida del plan cumplido: la meta era 7 de cada 10 (>= 45/64)
+   * y se alcanzan 47/64 (73.4%). Se fija 47 como nuevo piso contra regresiones.
    */
-  it(`no baja de 43/64 en el total, aun sin llegar a la meta de 45 (${totalBien.length}/${CORPUS.length})`, () => {
+  it(`cumple y supera la meta de 45/64 en el total (${totalBien.length}/${CORPUS.length})`, () => {
     expect({ aciertos: totalBien.length, fallas }).toMatchObject({
       aciertos: expect.any(Number),
     });
-    expect(totalBien.length).toBeGreaterThanOrEqual(43);
+    expect(totalBien.length).toBeGreaterThanOrEqual(47);
   });
 
-  /** PENDIENTE, mismo criterio: meta de a lo mas 6/64, hoy 7/64. */
-  it(`no inventa mas de 7/64 totales equivocados (${totalInventado.length}/${CORPUS.length})`, () => {
-    expect(totalInventado.length).toBeLessThanOrEqual(7);
+  /** Criterio cumplido: a lo más 6/64 totales equivocados; se reduce a 5/64. */
+  it(`no inventa mas de 5/64 totales equivocados (${totalInventado.length}/${CORPUS.length})`, () => {
+    expect(totalInventado.length).toBeLessThanOrEqual(5);
   });
 
   it(`lee bien la fecha en al menos 7 de cada 10 (${fechaBien.length}/${CORPUS.length})`, () => {

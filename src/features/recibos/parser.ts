@@ -95,8 +95,9 @@ const TOTAL_FUERTE = busca(
   'IMPORTE TOTAL',
   'TOTAL PAGADO',
   'NETO A PAGAR',
+  'TOTAL VENTA',
 );
-const TOTAL = busca('TOTAL');
+const TOTAL = busca('TOTAL', 'TO TAL', 'TOTAL M.N.', 'TOTAL MN');
 // Sin 'VENTA': "NOTA DE VENTA 12345" haría del folio un total de $12,345.
 const TOTAL_DEBIL = busca('IMPORTE', 'MONTO', 'A PAGAR', 'CARGO');
 
@@ -221,12 +222,12 @@ function repararNumeros(linea: string): string {
   let actual = linea;
   for (let i = 0; i < 5; i += 1) {
     const siguiente = actual
-      .replace(/(\d|[.,])[OQD](?=[\d.,\s]|$)/g, pon('0'))
+      .replace(/(\d|[.,])[OQD](?=[OQD\d.,\s]|$)/g, pon('0'))
       // Al inicio de un número, solo si no viene pegada a una palabra: sin
       // esta condición, "TOTAL234.50" perdería la L y dejaría de decir TOTAL.
-      .replace(/(^|[^A-Z])[OQD](?=\d)/g, pon('0'))
-      .replace(/(\d)[LI|](?=[\d.,\s]|$)/g, pon('1'))
-      .replace(/(^|[^A-Z])[LI|](?=\d)/g, pon('1'))
+      .replace(/(^|[^A-Z])[OQD](?=[OQD]*\d)/g, pon('0'))
+      .replace(/(\d)[LI|](?=[LI|\d.,\s]|$)/g, pon('1'))
+      .replace(/(^|[^A-Z])[LI|](?=[LI|]*\d)/g, pon('1'))
       .replace(/(\d)B(?=[\d.,])/g, pon('8'))
       .replace(/(\d)S(?=\d)/g, pon('5'));
     if (siguiente === actual) break;
@@ -307,8 +308,8 @@ function montosDe(linea: string): Monto[] {
 
 /** El renglón es solo un monto: "$234.50", "234.50 MXN", "M.N. 234.50". */
 function esSoloMonto(linea: string): boolean {
-  const resto = plano(linea)
-    .replace(/M\.?\s?N\.?|MXN|PESOS|\$/g, '')
+  const resto = repararNumeros(plano(linea))
+    .replace(/M\.?\s?N\.?|MXN|PESOS|\$|(?:^|[^A-Z])S(?=\d)/g, '')
     .replace(/[\d.,\s]/g, '');
   return resto.length <= 1 && montosDe(linea).length === 1;
 }
