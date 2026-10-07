@@ -193,6 +193,12 @@ export const MIGRACIONES: readonly string[] = [
      updated_at      text not null,
      deleted_at      text
    );`,
+
+  // 8 — recibo_uri en gastos (Fase 8).
+  //
+  // Guarda opcionalmente la ruta local de la foto del recibo asociada al gasto.
+  // Es nullable: los gastos capturados a mano no tienen foto.
+  `alter table gastos add column recibo_uri text;`,
 ];
 
 /**

@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,13 +13,30 @@ import { draftOccurredAt } from '../api';
 import { useCrearGasto } from '../hooks/useCrearGasto';
 
 export function AgregarScreen() {
-  const [amount, setAmount] = useState('');
+  const params = useLocalSearchParams<{
+    amount?: string;
+    note?: string;
+    fecha?: string;
+    reciboUri?: string;
+  }>();
+
+  const [amount, setAmount] = useState(params.amount ?? '');
   const [categoryId, setCategoryId] = useState<string>('comida');
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(params.note ?? '');
+  const [fecha, setFecha] = useState(params.fecha ?? '');
+  const [reciboUri, setReciboUri] = useState(params.reciboUri ?? '');
   const [cuentaId, setCuentaId] = useState<string | undefined>();
   const { data: categories = [] } = useCategorias();
   const { cuentas } = useCuentas();
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (params.amount !== undefined) setAmount(params.amount);
+    if (params.note !== undefined) setNote(params.note);
+    if (params.fecha !== undefined) setFecha(params.fecha);
+    if (params.reciboUri !== undefined) setReciboUri(params.reciboUri);
+  }, [params.amount, params.note, params.fecha, params.reciboUri]);
+
   // El aviso de presupuesto nombra la categoria, y el nombre lo tiene esta
   // pantalla, no el hook. Pasarselo evita que gastos tenga que ir a pedir las
   // categorias por su cuenta para armar una cadena.
@@ -45,9 +62,10 @@ export function AgregarScreen() {
         amountCents,
         currency: 'MXN',
         categoryId,
-        occurredAt: draftOccurredAt(),
+        occurredAt: draftOccurredAt(fecha || undefined),
         ...(nota ? { note: nota } : {}),
         ...(cuentaElegida ? { cuentaId: cuentaElegida } : {}),
+        ...(reciboUri ? { reciboUri } : {}),
       });
     } catch (e) {
       setError(e instanceof MoneyError ? e.message : 'Monto inválido');
@@ -140,6 +158,40 @@ export function AgregarScreen() {
           {error ? (
             <GTexto variante="caption" color={colores.error} testID="error-monto">
               {error}
+            </GTexto>
+          ) : null}
+
+          <Pressable
+            testID="btn-abrir-escanear"
+            accessibilityRole="button"
+            accessibilityLabel="Escanear ticket o recibo con la cámara"
+            onPress={() => router.push('/escanear')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingVertical: 6,
+              paddingHorizontal: 12,
+              borderRadius: 999,
+              backgroundColor: colores.superficie,
+              borderWidth: 1,
+              borderColor: colores.borde,
+              marginTop: 4,
+            }}
+          >
+            <GTexto style={{ fontSize: scaledSize(13) }}>📷</GTexto>
+            <GTexto variante="caption" color={colores.acento} style={{ fontWeight: '600' }}>
+              Escanear recibo
+            </GTexto>
+          </Pressable>
+
+          {fecha ? (
+            <GTexto
+              variante="caption"
+              color={colores.textoSecundario}
+              testID="aviso-fecha-recibo"
+            >
+              {`Fecha del recibo: ${fecha}`}
             </GTexto>
           ) : null}
         </View>

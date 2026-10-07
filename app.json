@@ -20,7 +20,14 @@
       "expo-router",
       "expo-sqlite",
       "expo-notifications",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permite seleccionar fotos de recibos para leer el monto y datos de compra.",
+          "cameraPermission": "Permite tomar fotos de recibos para leer el monto y datos de compra."
+        }
+      ]
     ]
   }
 }

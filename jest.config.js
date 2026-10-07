@@ -54,6 +54,7 @@ module.exports = {
     '!src/features/reportes/index.ts',
     '!src/features/cuentas/index.ts',
     '!src/features/metas/index.ts',
+    '!src/features/recibos/index.ts',
     '!src/shared/ui/index.ts',
     // colores.ts es un objeto de datos sin lógica, y los componentes que lo
     // consumen (GTexto, GBoton, GCampo) no tienen prueba unitaria propia por

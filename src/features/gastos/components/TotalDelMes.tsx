@@ -158,6 +158,14 @@ export function TotalDelMes({
           accessibilityLabel="Ver metas de ahorro"
           color={colores.acento}
         />
+
+        <Pastilla
+          href="/escanear"
+          testID="btn-escanear-recibo"
+          etiqueta="Escanear"
+          accessibilityLabel="Escanear recibo con OCR"
+          color={colores.acento}
+        />
       </View>
 
       <GTexto variante="caption" color={colores.textoSecundario} style={{ paddingTop: 8 }}>

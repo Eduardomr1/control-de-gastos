@@ -1,0 +1,44 @@
+# TC-140 / TC-143 — Flujo de escaneo de recibos y prellenado de AgregarScreen.
+#
+# Valida la navegacion hacia la pantalla modal de escaneo de recibos desde el
+# encabezado de la lista y desde AgregarScreen, la disponibilidad de los
+# controles de captura (camara y galeria), y la cancelacion limpia sin efectos
+# colaterales.
+appId: mx.eduardomaytorena.gastos
+---
+- runFlow: shared/login.yaml
+- assertVisible:
+    id: "screen-lista"
+
+# Apertura desde el boton de pastilla en el balance
+- tapOn:
+    id: "btn-escanear-recibo"
+- assertVisible:
+    id: "screen-escanear-recibo"
+- assertVisible:
+    id: "btn-tomar-foto"
+- assertVisible:
+    id: "btn-elegir-galeria"
+
+# Cancelar devuelve a la lista principal
+- tapOn:
+    id: "btn-cancelar"
+- assertVisible:
+    id: "screen-lista"
+
+# Apertura alternativa desde AgregarScreen
+- tapOn:
+    id: "fab-agregar"
+- assertVisible:
+    id: "screen-nuevo-gasto"
+- assertVisible:
+    id: "btn-abrir-escanear"
+
+- tapOn:
+    id: "btn-abrir-escanear"
+- assertVisible:
+    id: "screen-escanear-recibo"
+- tapOn:
+    id: "btn-cancelar"
+- assertVisible:
+    id: "screen-nuevo-gasto"

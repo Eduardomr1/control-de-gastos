@@ -23,6 +23,7 @@ interface Fila {
   occurred_at: string;
   note: string | null;
   cuenta_id: string | null;
+  recibo_uri?: string | null;
   sync_state: string;
   updated_at: string;
   deleted_at: string | null;
@@ -39,6 +40,7 @@ function aExpense(fila: Fila): Expense {
     updatedAt: fila.updated_at,
     ...(fila.note === null ? {} : { note: fila.note }),
     ...(fila.cuenta_id === null ? {} : { cuentaId: fila.cuenta_id }),
+    ...(fila.recibo_uri ? { reciboUri: fila.recibo_uri } : {}),
     ...(fila.deleted_at === null ? {} : { deletedAt: fila.deleted_at }),
   };
 }
@@ -46,8 +48,8 @@ function aExpense(fila: Fila): Expense {
 function guardarFila(e: Expense): void {
   db.runSync(
     `insert or replace into gastos
-       (id, amount_cents, currency, category_id, occurred_at, note, cuenta_id, sync_state, updated_at, deleted_at)
-     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, amount_cents, currency, category_id, occurred_at, note, cuenta_id, recibo_uri, sync_state, updated_at, deleted_at)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       e.id,
       e.amountCents,
@@ -56,6 +58,7 @@ function guardarFila(e: Expense): void {
       e.occurredAt,
       e.note ?? null,
       e.cuentaId ?? null,
+      e.reciboUri ?? null,
       e.syncState,
       e.updatedAt,
       e.deletedAt ?? null,
