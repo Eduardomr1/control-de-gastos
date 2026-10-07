@@ -588,3 +588,41 @@ los cuatro producían el mismo texto genérico.
 | Pasos | Crear una meta con fecha límite `2027-02-30` |
 | Resultado esperado | Se rechaza con un mensaje en el formulario |
 | Nota | Tiene la forma correcta y no es un día. `Date.parse` la aceptaría y la recorrería en silencio al 2 de marzo. |
+
+---
+
+## Suite: Recibos (OCR)
+
+### TC-140 — Apertura y navegación del escáner de recibos
+**Prioridad:** P1 · **Automatizado** · `.maestro/14-escanear-recibo.yaml`
+
+| | |
+|---|---|
+| Pasos | Abrir la pantalla de escaneo desde la pastilla del balance o desde el botón en `AgregarScreen`, revisar controles y cancelar |
+| Resultado esperado | El modal muestra las opciones de "Tomar foto con cámara" y "Elegir de la galería"; cancelar devuelve a la pantalla previa sin errores |
+
+### TC-141 — Precisión del parser contra el corpus de recibos reales
+**Prioridad:** P1 · **Automatizado** · `src/features/recibos/parser.corpus.test.ts`
+
+| | |
+|---|---|
+| Pasos | Procesar el corpus de 64 tickets mexicanos representativos con ruido típico de OCR |
+| Resultado esperado | Total correcto en $\ge 70\%$ (alcanzado 47/64, 73.4%); fecha correcta en $\ge 70\%$ (56/64); comercio reconocido en $\ge 70\%$ (49/64); y falsos totales $\le 5/64$ |
+| Nota | La regla rectora del parser es que un total equivocado es estrictamente peor que ninguno: si el parser duda, prefiere dejar el campo vacío para captura manual en vez de inventar un monto erróneo. |
+
+### TC-142 — Tolerancia a errores de OCR y sustituciones comunes
+**Prioridad:** P1 · **Automatizado** · `src/features/recibos/parser.test.ts`
+
+| | |
+|---|---|
+| Pasos | Procesar cadenas con sustituciones de OCR frecuentes: `S` por `$`, `O/Q/D` por `0`, `I/L/|` por `1` |
+| Resultado esperado | `repararNumeros` rescata montos como `$494.OO` o `S166.5O` sin confundir palabras como `TOTAL` |
+
+### TC-143 — Migración v8 conserva integridad de datos
+**Prioridad:** P1 · **Automatizado** · `src/shared/lib/db/migraciones.sqlite.test.ts`
+
+| | |
+|---|---|
+| Pasos | Aplicar la migración v8 sobre una base de datos con movimientos preexistentes |
+| Resultado esperado | La columna nullable `recibo_uri` se añade a `gastos` sin pérdida de registros ni alteraciones en los importes |
+

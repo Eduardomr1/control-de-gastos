@@ -11,7 +11,12 @@
  */
 
 import type { Expense, NewExpenseInput } from '@/types/expense';
-import { nowLocalIso } from '@/shared/lib/date';
+import {
+  componentesLocales,
+  esFechaDelCalendario,
+  isoLocal,
+  nowLocalIso,
+} from '@/shared/lib/date';
 import { generarId } from '@/shared/lib/id';
 import { expenseCache } from '../store/expenseCache';
 
@@ -47,6 +52,21 @@ export async function deleteExpense(id: string): Promise<void> {
   );
 }
 
-export function draftOccurredAt(): string {
+export function draftOccurredAt(fechaIso?: string): string {
+  if (fechaIso && esFechaDelCalendario(fechaIso)) {
+    const partes = fechaIso.split('-').map(Number);
+    const y = partes[0];
+    const m = partes[1];
+    const d = partes[2];
+    if (y !== undefined && m !== undefined && d !== undefined) {
+      const c = componentesLocales(nowLocalIso());
+      return isoLocal({
+        ...c,
+        anio: y,
+        mes: m,
+        dia: d,
+      });
+    }
+  }
   return nowLocalIso();
 }

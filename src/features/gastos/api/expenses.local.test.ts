@@ -65,4 +65,15 @@ describe('draftOccurredAt', () => {
   it('produce una fecha con offset que monthKeyOf puede consumir', () => {
     expect(() => monthKeyOf(draftOccurredAt())).not.toThrow();
   });
+
+  it('con fecha YYYY-MM-DD explícita preserva el día y agrega offset local', () => {
+    const res = draftOccurredAt('2026-09-23');
+    expect(res.startsWith('2026-09-23T')).toBe(true);
+    expect(monthKeyOf(res)).toBe('2026-09');
+  });
+
+  it('con fecha inválida cae a la fecha actual sin tronar', () => {
+    const res = draftOccurredAt('invalida');
+    expect(() => monthKeyOf(res)).not.toThrow();
+  });
 });

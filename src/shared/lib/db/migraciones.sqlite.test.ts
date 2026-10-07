@@ -307,4 +307,14 @@ describe('la migración sobre un dispositivo que ya tenía gastos', () => {
     expect(cuantos(db)).toBe(MONTOS.length);
     expect(db.prepare('select count(*) as n from cuentas').get()?.['n']).toBe(0);
   });
+
+  it('la v8 agrega recibo_uri sin alterar los datos existentes', () => {
+    const db = dispositivoConDatos();
+    const antes = total(db);
+    aplicarMigraciones(motor(db));
+
+    const fila = db.prepare('select * from gastos limit 1').get() as Record<string, unknown>;
+    expect('recibo_uri' in fila).toBe(true);
+    expect(total(db)).toBe(antes);
+  });
 });

@@ -25,6 +25,8 @@ export interface Expense {
   readonly note?: string;
   /** Cuenta a la que se cargó. Ausente solo en lo que llega del backend. */
   readonly cuentaId?: string;
+  /** Ruta local de la foto del recibo si se capturó con la cámara o galería. */
+  readonly reciboUri?: string;
   readonly syncState: SyncState;
   readonly updatedAt: string;
   readonly deletedAt?: string;
