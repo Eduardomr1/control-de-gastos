@@ -1,20 +1,16 @@
 import { Link } from 'expo-router';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
-import { GTexto } from '@/shared/ui';
+import { GTexto, GAnimatedPressable } from '@/shared/ui';
 
 import { saldoTotal } from '../saldos';
 import { ETIQUETA_TIPO, type SaldoDeCuenta } from '../types';
 
 /**
- * Saldo por cuenta y consolidado, en el encabezado de la lista.
- *
- * Con una sola cuenta no se dibuja: el saldo de "General" sería el mismo
- * número que ya da el balance del mes, repetido dos centímetros más abajo. La
- * fila aparece cuando el usuario crea su segunda cuenta, que es cuando la
- * pregunta "¿cuánto tengo en cada una?" empieza a existir.
+ * Saldo por cuenta y consolidado en el encabezado de la lista.
+ * Tarjetas horizontales interactivas con microinteracción elástica.
  */
 export function TarjetasDeSaldo({ saldos }: { saldos: readonly SaldoDeCuenta[] }) {
   if (saldos.length < 2) return null;
@@ -45,58 +41,66 @@ export function TarjetasDeSaldo({ saldos }: { saldos: readonly SaldoDeCuenta[] }
           {`Cuentas · ${formatMoney(total)}`}
         </GTexto>
         <Link href="/cuentas" asChild>
-          <Pressable
+          <GAnimatedPressable
             testID="btn-configurar-cuentas"
             accessibilityRole="button"
             accessibilityLabel="Administrar cuentas"
-            style={{ minHeight: 44, justifyContent: 'center' }}
+            scaleTarget={0.92}
+            style={{
+              minHeight: 36,
+              paddingHorizontal: 12,
+              borderRadius: 999,
+              backgroundColor: colores.acentoSuave,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
           >
-            <GTexto variante="caption" color={colores.acento}>
+            <GTexto variante="caption" color={colores.acento} style={{ fontWeight: '700' }}>
               Administrar
             </GTexto>
-          </Pressable>
+          </GAnimatedPressable>
         </Link>
       </View>
 
-      {/* Horizontal: con cuatro o cinco cuentas, apilarlas empujaría la lista
-          de gastos fuera de la pantalla en el primer scroll. */}
+      {/* Carrusel horizontal de Cuentas */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
       >
         {saldos.map(({ cuenta, saldoCents }) => (
-          <View
-            key={cuenta.id}
-            testID={`saldo-${cuenta.id}`}
-            accessibilityLabel={`${cuenta.nombre}: ${formatMoney(saldoCents, cuenta.currency)}`}
-            style={{
-              minWidth: 140,
-              gap: 4,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: colores.borde,
-              backgroundColor: colores.superficie,
-            }}
-          >
-            <GTexto variante="caption" color={colores.textoSecundario}>
-              {ETIQUETA_TIPO[cuenta.tipo]}
-            </GTexto>
-            <GTexto variante="caption" style={{ fontWeight: '600' }}>
-              {cuenta.nombre}
-            </GTexto>
-            <GTexto
-              variante="label"
-              // Un saldo negativo se muestra con su signo y en rojo, igual que
-              // el balance: es el dato, no un error de cálculo que ocultar.
-              color={saldoCents < 0 ? colores.error : colores.texto}
-              style={{ fontWeight: '700' }}
+          <Link key={cuenta.id} href="/cuentas" asChild>
+            <GAnimatedPressable
+              testID={`saldo-${cuenta.id}`}
+              accessibilityLabel={`${cuenta.nombre}: ${formatMoney(saldoCents, cuenta.currency)}`}
+              scaleTarget={0.96}
+              style={{
+                minWidth: 144,
+                gap: 4,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                borderRadius: 18,
+                borderWidth: 1,
+                borderColor: colores.borde,
+                backgroundColor: colores.superficie,
+                ...colores.sombraTarjeta,
+              }}
             >
-              {formatMoney(saldoCents, cuenta.currency)}
-            </GTexto>
-          </View>
+              <GTexto variante="caption" color={colores.textoSecundario} style={{ fontSize: 11, fontWeight: '600' }}>
+                {ETIQUETA_TIPO[cuenta.tipo]}
+              </GTexto>
+              <GTexto variante="body" style={{ fontWeight: '700', color: colores.texto }}>
+                {cuenta.nombre}
+              </GTexto>
+              <GTexto
+                variante="label"
+                color={saldoCents < 0 ? colores.error : colores.positivo}
+                style={{ fontWeight: '800', marginTop: 2 }}
+              >
+                {formatMoney(saldoCents, cuenta.currency)}
+              </GTexto>
+            </GAnimatedPressable>
+          </Link>
         ))}
       </ScrollView>
     </View>
