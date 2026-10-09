@@ -1,10 +1,10 @@
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { formatDayShort } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { apilaPorEscala, rowMinHeight, scaledSize } from '@/shared/theme/tipografia';
-import { GTexto } from '@/shared/ui';
+import { GTexto, GAnimatedPressable } from '@/shared/ui';
 import type { Category, Expense } from '@/types/expense';
 
 export function FilaGasto({
@@ -24,13 +24,11 @@ export function FilaGasto({
   const color = categoria?.color ?? colores.acento;
   const fecha = formatDayShort(expense.occurredAt);
   const apilado = apilaPorEscala();
+  const inicial = (nombre.trim()[0] ?? 'G').toUpperCase();
 
   return (
-    <Pressable
+    <GAnimatedPressable
       onLongPress={onLongPress}
-      // ponytail: mantener presionado en vez de deslizar. Un swipe necesita
-      // gesture-handler y layout propio; el long press ya lo trae Pressable y
-      // los lectores de pantalla lo anuncian solo.
       accessibilityHint="Mantén presionado para eliminar"
       testID={`gasto-${index}`}
       accessible
@@ -43,12 +41,9 @@ export function FilaGasto({
       ]
         .filter(Boolean)
         .join('. ')}
+      scaleTarget={0.98}
       style={{
-        // minHeight, nunca height. Ver BUG-005.
         minHeight: rowMinHeight(),
-        // Con la fuente muy ampliada la fila se vuelve columna: en horizontal
-        // el monto le roba a la categoría el ancho que necesita y la palabra
-        // termina partida a la mitad. Ver BUG-017.
         flexDirection: apilado ? 'column' : 'row',
         flexWrap: 'wrap',
         alignItems: apilado ? 'flex-start' : 'center',
@@ -58,60 +53,77 @@ export function FilaGasto({
         backgroundColor: colores.superficie,
       }}
     >
+      {/* Contenedor de Categoría con Tinte y Letra Inicial */}
       <View
         accessible={false}
         style={{
-          width: scaledSize(42, 1.5),
-          height: scaledSize(42, 1.5),
+          width: scaledSize(44, 1.5),
+          height: scaledSize(44, 1.5),
           borderRadius: 14,
           alignItems: 'center',
           justifyContent: 'center',
-          // Tinte de la categoría al 10%: el color ya vive en el modelo, así
-          // que la fila no necesita un catálogo de iconos aparte.
-          backgroundColor: `${color}1A`,
+          backgroundColor: `${color}18`,
+          borderWidth: 1,
+          borderColor: `${color}30`,
         }}
       >
-        <View
+        <GTexto
+          variante="label"
+          color={color}
           style={{
-            width: scaledSize(14, 1.5),
-            height: scaledSize(14, 1.5),
-            borderRadius: 999,
-            backgroundColor: color,
+            fontWeight: '800',
+            fontSize: scaledSize(15, 1.5),
           }}
-        />
+        >
+          {inicial}
+        </GTexto>
       </View>
 
+      {/* Detalle del Gasto: Categoría, Nota y Fecha */}
       <View
         style={{
           flexGrow: 1,
           flexShrink: 1,
-          // Apilado toma el ancho completo; en fila cede lo que necesita el monto.
           flexBasis: apilado ? 'auto' : 150,
           alignSelf: apilado ? 'stretch' : undefined,
           gap: 2,
         }}
       >
-        <GTexto variante="body" style={{ fontWeight: '500' }}>
+        <GTexto variante="body" style={{ fontWeight: '600', color: colores.texto }}>
           {nombre}
         </GTexto>
         <GTexto variante="caption" color={colores.textoSecundario}>
           {expense.note ? `${fecha} · ${expense.note}` : fecha}
         </GTexto>
         {isPending ? (
-          // El estado no se comunica solo con color: lleva ícono y texto.
-          <GTexto variante="caption" color="#B45309" testID="badge-pending">
-            ⏱ Pendiente de sincronizar
-          </GTexto>
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              backgroundColor: '#FEF3C7',
+              borderRadius: 6,
+              paddingHorizontal: 6,
+              paddingVertical: 2,
+              marginTop: 2,
+            }}
+          >
+            <GTexto variante="caption" color="#B45309" testID="badge-pending" style={{ fontWeight: '600' }}>
+              ⏱ Pendiente de sincronizar
+            </GTexto>
+          </View>
         ) : null}
       </View>
 
+      {/* Monto del Gasto */}
       <GTexto
         variante="amount"
         testID={`gasto-monto-${index}`}
-        style={apilado ? undefined : { marginLeft: 'auto' }}
+        style={[
+          { fontWeight: '700', letterSpacing: -0.3 },
+          apilado ? undefined : { marginLeft: 'auto' },
+        ]}
       >
-        {formatMoney(expense.amountCents, expense.currency)}
+        {`- ${formatMoney(expense.amountCents, expense.currency)}`}
       </GTexto>
-    </Pressable>
+    </GAnimatedPressable>
   );
 }
