@@ -1,15 +1,15 @@
 import { Link, router } from 'expo-router';
 import { useEffect, type ReactNode } from 'react';
-import { Alert, Pressable, SectionList, Text, View } from 'react-native';
+import { Alert, SectionList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInRight, FadeInUp } from 'react-native-reanimated';
 
 import { formatMonthKey } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { controlSize, scaledSize } from '@/shared/theme/tipografia';
 import { esFailure, type Failure } from '@/shared/errors';
-import { GAsyncGate, GTexto } from '@/shared/ui';
+import { GAsyncGate, GTexto, GAnimatedPressable } from '@/shared/ui';
 import { signOut } from '@/features/auth';
 import { ResumenDePresupuestos, type Presupuesto } from '@/features/presupuestos';
 import { TarjetasDeSaldo, type SaldoDeCuenta } from '@/features/cuentas';
@@ -235,45 +235,47 @@ function ContenidoLista({
         )}
       />
 
-      <Link href="/add" asChild>
-        <Pressable
-          testID="fab-agregar"
-          accessibilityRole="button"
-          accessibilityLabel="Agregar gasto"
-          style={{
-            position: 'absolute',
-            right: 20,
-            bottom: 32,
-            // Escalado con el ajuste de fuente: quien amplía el texto también
-            // necesita un objetivo táctil mayor. Ver BUG-007.
-            width: controlSize(64),
-            height: controlSize(64),
-            borderRadius: controlSize(64) / 2,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: colores.acento,
-            // El resplandor del diseño. shadowOffset se omite: su valor por
-            // defecto ya es {0,0}, que es justo el halo centrado que se busca.
-            shadowColor: colores.acento,
-            shadowOpacity: 0.4,
-            shadowRadius: 20,
-            elevation: 8,
-          }}
-        >
-          {/* El círculo ya escala con controlSize y tiene tope; el glifo
-              escala con él, no por su cuenta. Ver BUG-017. */}
-          <Text
-            allowFontScaling={false}
+      <Animated.View
+        entering={FadeInUp.duration(400).springify()}
+        style={{
+          position: 'absolute',
+          right: 20,
+          bottom: 32,
+        }}
+      >
+        <Link href="/add" asChild>
+          <GAnimatedPressable
+            testID="fab-agregar"
+            accessibilityRole="button"
+            accessibilityLabel="Agregar gasto"
+            scaleTarget={0.91}
             style={{
-              color: colores.sobreAcento,
-              fontSize: scaledSize(28, 1.5),
-              lineHeight: scaledSize(32, 1.5),
+              width: controlSize(64),
+              height: controlSize(64),
+              borderRadius: controlSize(64) / 2,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colores.acento,
+              shadowColor: colores.acento,
+              shadowOpacity: 0.45,
+              shadowRadius: 20,
+              elevation: 8,
             }}
           >
-            +
-          </Text>
-        </Pressable>
-      </Link>
+            <Text
+              allowFontScaling={false}
+              style={{
+                color: colores.sobreAcento,
+                fontSize: scaledSize(28, 1.5),
+                lineHeight: scaledSize(32, 1.5),
+                fontWeight: '400',
+              }}
+            >
+              +
+            </Text>
+          </GAnimatedPressable>
+        </Link>
+      </Animated.View>
     </SafeAreaView>
   );
 }
