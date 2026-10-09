@@ -1,19 +1,17 @@
 import { Link } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { View, ScrollView } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { formatMonthName } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
-import { GTexto } from '@/shared/ui';
+import { GTexto, GAnimatedPressable } from '@/shared/ui';
 
 /**
- * Encabezado de la lista: balance del mes arriba, y debajo las dos mitades que
- * lo forman.
- *
- * El protagonista es el balance y no el gasto acumulado, porque es el número
- * que responde la pregunta que trae el usuario ("¿cómo voy este mes?"). El
- * gasto sigue visible con su propio `testID`: es el dato que verifican los
- * flujos E2E, y ninguno tuvo que cambiar por este rediseño.
+ * Encabezado principal del dashboard de gastos:
+ * Hero Card fintech con física elástica de entrada vía Reanimated,
+ * balance en tiempo real, desglose visual de ingresos/gastos y
+ * barra de acciones rápidas con microinteracciones táctiles.
  */
 export function TotalDelMes({
   currentMonth,
@@ -30,184 +28,273 @@ export function TotalDelMes({
   onSalir?: (() => void) | undefined;
 }) {
   const balance = ingresosCents - totalCents;
+  const esPositivo = balance >= 0;
 
   return (
-    <View
+    <Animated.View
+      entering={FadeInDown.duration(450).springify()}
       style={{
-        paddingHorizontal: 20,
         paddingBottom: 16,
-        gap: 4,
-        borderBottomWidth: 1,
-        borderBottomColor: colores.borde,
       }}
     >
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <GTexto variante="eyebrow" color={colores.textoSecundario}>
-          {`Balance de ${formatMonthName(currentMonth)}`}
-        </GTexto>
-        {onSalir ? (
-          <Pressable
-            testID="btn-salir"
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar sesión"
-            onPress={onSalir}
-            // 44pt es el minimo tactil de Apple y Material.
-            style={{ minHeight: 44, minWidth: 44, justifyContent: 'center' }}
-          >
-            <GTexto variante="caption" color={colores.acento}>
-              Salir
-            </GTexto>
-          </Pressable>
-        ) : null}
-      </View>
-
-      {/* flexWrap: a escala de fuente grande el monto y la divisa se acomodan
-          en dos renglones en vez de recortarse. */}
+      {/* Hero Card Fintech */}
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'baseline',
-          flexWrap: 'wrap',
-          gap: 8,
-        }}
-      >
-        <GTexto
-          variante="total"
-          // Un balance negativo se muestra en rojo y con su signo, no en valor
-          // absoluto: gastar más de lo que entró es exactamente el dato que la
-          // pantalla existe para dar.
-          color={balance < 0 ? colores.error : colores.positivo}
-          testID="balance-mes"
-        >
-          {formatMoney(balance)}
-        </GTexto>
-        <GTexto variante="caption" color={colores.textoSecundario}>
-          MXN
-        </GTexto>
-      </View>
-
-      <View
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          alignItems: 'center',
+          marginHorizontal: 16,
+          marginTop: 8,
+          marginBottom: 16,
+          padding: 20,
+          borderRadius: 24,
+          backgroundColor: colores.tarjetaHero,
+          borderWidth: 1,
+          borderColor: colores.tarjetaHeroBorde,
+          ...colores.sombraTarjeta,
           gap: 16,
-          paddingTop: 8,
         }}
       >
-        <View style={{ gap: 2 }}>
-          <GTexto variante="caption" color={colores.textoSecundario}>
-            Gastos
+        {/* Fila superior: Mes y botón Salir */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: esPositivo ? '#10B981' : '#F43F5E',
+              }}
+            />
+            <GTexto
+              variante="eyebrow"
+              color={colores.tarjetaHeroSubtexto}
+              style={{ textTransform: 'uppercase', letterSpacing: 0.8 }}
+            >
+              {`Balance de ${formatMonthName(currentMonth)}`}
+            </GTexto>
+          </View>
+
+          {onSalir ? (
+            <GAnimatedPressable
+              testID="btn-salir"
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar sesión"
+              onPress={onSalir}
+              style={{
+                minHeight: 36,
+                paddingHorizontal: 12,
+                borderRadius: 999,
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <GTexto variante="caption" color={colores.tarjetaHeroTexto} style={{ fontWeight: '600' }}>
+                Salir
+              </GTexto>
+            </GAnimatedPressable>
+          ) : null}
+        </View>
+
+        {/* Monto del Balance Principal */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'baseline',
+            flexWrap: 'wrap',
+            gap: 8,
+          }}
+        >
+          <GTexto
+            variante="total"
+            color={esPositivo ? '#10B981' : '#F43F5E'}
+            testID="balance-mes"
+            style={{ fontWeight: '800', letterSpacing: -0.5 }}
+          >
+            {formatMoney(balance)}
           </GTexto>
-          <GTexto variante="label" color={colores.texto} testID="total-mes">
-            {formatMoney(totalCents)}
+          <GTexto
+            variante="caption"
+            color={colores.tarjetaHeroSubtexto}
+            style={{ fontWeight: '600', letterSpacing: 1 }}
+          >
+            MXN
           </GTexto>
         </View>
 
-        <View style={{ gap: 2 }}>
-          <GTexto variante="caption" color={colores.textoSecundario}>
-            Ingresos
-          </GTexto>
-          <GTexto variante="label" color={colores.positivo} testID="total-ingresos-mes">
-            {formatMoney(ingresosCents)}
-          </GTexto>
-        </View>
+        {/* Cajas de Desglose: Gastos e Ingresos */}
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 10,
+            paddingTop: 4,
+          }}
+        >
+          {/* Bloque Gastos */}
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(255, 255, 255, 0.06)',
+              borderRadius: 16,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              gap: 2,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.06)',
+            }}
+          >
+            <GTexto variante="caption" color={colores.tarjetaHeroSubtexto} style={{ fontSize: 11 }}>
+              Gastos
+            </GTexto>
+            <GTexto
+              variante="label"
+              color="#F87171"
+              testID="total-mes"
+              style={{ fontWeight: '700' }}
+            >
+              {formatMoney(totalCents)}
+            </GTexto>
+          </View>
 
-        {/* El FAB se queda para el gasto, que es la acción frecuente; el
-            ingreso se registra dos o tres veces al mes y no merece competir
-            por el pulgar. Aquí está donde el usuario ya vino a mirarlo. */}
-        <Pastilla
+          {/* Bloque Ingresos */}
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(255, 255, 255, 0.06)',
+              borderRadius: 16,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              gap: 2,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.06)',
+            }}
+          >
+            <GTexto variante="caption" color={colores.tarjetaHeroSubtexto} style={{ fontSize: 11 }}>
+              Ingresos
+            </GTexto>
+            <GTexto
+              variante="label"
+              color="#34D399"
+              testID="total-ingresos-mes"
+              style={{ fontWeight: '700' }}
+            >
+              {formatMoney(ingresosCents)}
+            </GTexto>
+          </View>
+        </View>
+      </View>
+
+      {/* Carrusel horizontal de Acciones Rápidas */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          gap: 8,
+          alignItems: 'center',
+        }}
+      >
+        <PastillaAnimada
           href="/ingreso"
           testID="btn-agregar-ingreso"
           etiqueta="+ Ingreso"
           accessibilityLabel="Registrar ingreso"
           color={colores.positivo}
+          fondo={colores.positivoSuave}
         />
 
-        <Pastilla
+        <PastillaAnimada
           href="/recurrentes"
           testID="btn-recurrentes"
           etiqueta="Recurrentes"
           accessibilityLabel="Ver movimientos recurrentes"
           color={colores.acento}
+          fondo={colores.acentoSuave}
         />
 
-        <Pastilla
+        <PastillaAnimada
           href="/reportes"
           testID="btn-reportes"
           etiqueta="Reportes"
           accessibilityLabel="Ver reportes"
           color={colores.acento}
+          fondo={colores.acentoSuave}
         />
 
-        {/* Siempre visible, aunque las tarjetas de saldo no se dibujen: con
-            una sola cuenta, el boton "Administrar" de esas tarjetas no existe,
-            y sin este no habria por donde crear la segunda. */}
-        <Pastilla
+        <PastillaAnimada
           href="/cuentas"
           testID="btn-cuentas"
           etiqueta="Cuentas"
           accessibilityLabel="Administrar cuentas"
           color={colores.acento}
+          fondo={colores.acentoSuave}
         />
 
-        <Pastilla
+        <PastillaAnimada
           href="/metas"
           testID="btn-metas"
           etiqueta="Metas"
           accessibilityLabel="Ver metas de ahorro"
           color={colores.acento}
+          fondo={colores.acentoSuave}
         />
 
-        <Pastilla
+        <PastillaAnimada
           href="/escanear"
           testID="btn-escanear-recibo"
           etiqueta="Escanear"
           accessibilityLabel="Escanear recibo con OCR"
           color={colores.acento}
+          fondo={colores.acentoSuave}
         />
-      </View>
+      </ScrollView>
 
-      <GTexto variante="caption" color={colores.textoSecundario} style={{ paddingTop: 8 }}>
-        {conteo === 1 ? '1 gasto registrado' : `${conteo} gastos registrados`}
-      </GTexto>
-    </View>
+      {/* Contador de Gastos del Mes */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 14 }}>
+        <GTexto variante="caption" color={colores.textoSecundario} style={{ fontWeight: '500' }}>
+          {conteo === 1 ? '1 gasto registrado' : `${conteo} gastos registrados`}
+        </GTexto>
+      </View>
+    </Animated.View>
   );
 }
 
-/** Enlace en forma de pastilla. Cinco iguales seguidas pedían un solo molde. */
-function Pastilla({
+/** Enlace en forma de pastilla interactiva con micro-escalado suave al tocar */
+function PastillaAnimada({
   href,
   testID,
   etiqueta,
   accessibilityLabel,
   color,
+  fondo,
 }: {
   href: string;
   testID: string;
   etiqueta: string;
   accessibilityLabel: string;
   color: string;
+  fondo: string;
 }) {
   return (
     <Link href={href} asChild>
-      <Pressable
+      <GAnimatedPressable
         testID={testID}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
+        scaleTarget={0.93}
         style={{
-          minHeight: 44,
+          minHeight: 40,
           justifyContent: 'center',
-          paddingHorizontal: 14,
+          alignItems: 'center',
+          paddingHorizontal: 16,
           borderRadius: 999,
+          backgroundColor: fondo,
           borderWidth: 1,
-          borderColor: color,
+          borderColor: `${color}33`,
         }}
       >
-        <GTexto variante="caption" color={color} style={{ fontWeight: '600' }}>
+        <GTexto variante="caption" color={color} style={{ fontWeight: '700' }}>
           {etiqueta}
         </GTexto>
-      </Pressable>
+      </GAnimatedPressable>
     </Link>
   );
 }
