@@ -1,7 +1,7 @@
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { colores } from '@/shared/theme/colores';
-import { GTexto } from '@/shared/ui';
+import { GAnimatedPressable, GTexto } from '@/shared/ui';
 
 import type { Cuenta } from '../types';
 
@@ -36,13 +36,14 @@ export function SelectorDeCuenta({
         {cuentas.map((cuenta) => {
           const activa = cuenta.id === seleccionada;
           return (
-            <Pressable
+            <GAnimatedPressable
               key={cuenta.id}
               testID={`cuenta-${cuenta.id}`}
               accessibilityRole="radio"
               accessibilityLabel={cuenta.nombre}
               accessibilityState={{ selected: activa }}
               onPress={() => onSeleccionar(cuenta.id)}
+              scaleTarget={0.94}
               style={{
                 minHeight: 48,
                 justifyContent: 'center',
@@ -59,7 +60,7 @@ export function SelectorDeCuenta({
               >
                 {cuenta.nombre}
               </GTexto>
-            </Pressable>
+            </GAnimatedPressable>
           );
         })}
       </View>

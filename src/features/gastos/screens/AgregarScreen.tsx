@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ScrollView, TextInput, View } from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MoneyError, parseAmount } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { scaledSize, typography } from '@/shared/theme/tipografia';
-import { GBoton, GCampo, GTexto } from '@/shared/ui';
+import { GAnimatedPressable, GBoton, GCampo, GTexto } from '@/shared/ui';
 import { useCategorias } from '@/features/categorias';
 import { SelectorDeCuenta, useCuentas } from '@/features/cuentas';
 import { draftOccurredAt } from '../api';
@@ -89,17 +90,18 @@ export function AgregarScreen() {
           borderBottomColor: colores.borde,
         }}
       >
-        <Pressable
+        <GAnimatedPressable
           testID="btn-cancelar"
           accessibilityRole="button"
           accessibilityLabel="Cancelar"
           onPress={() => router.back()}
+          scaleTarget={0.92}
           style={{ minHeight: 44, justifyContent: 'center' }}
         >
           <GTexto variante="body" color={colores.acento} style={{ fontWeight: '600' }}>
             Cancelar
           </GTexto>
-        </Pressable>
+        </GAnimatedPressable>
 
         <GTexto variante="label" style={{ fontWeight: '600' }}>
           Nuevo gasto
@@ -110,10 +112,22 @@ export function AgregarScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 22 }}
+        contentContainerStyle={{ padding: 20, gap: 20 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ alignItems: 'center', gap: 10, paddingVertical: 12 }}>
+        <Animated.View
+          entering={FadeInDown.duration(350)}
+          style={{
+            alignItems: 'center',
+            gap: 10,
+            paddingVertical: 18,
+            paddingHorizontal: 16,
+            borderRadius: 16,
+            backgroundColor: colores.superficie,
+            borderWidth: 1,
+            borderColor: colores.borde,
+          }}
+        >
           <GTexto variante="eyebrow" color={colores.textoSecundario}>
             Monto
           </GTexto>
@@ -161,19 +175,20 @@ export function AgregarScreen() {
             </GTexto>
           ) : null}
 
-          <Pressable
+          <GAnimatedPressable
             testID="btn-abrir-escanear"
             accessibilityRole="button"
             accessibilityLabel="Escanear ticket o recibo con la cámara"
             onPress={() => router.push('/escanear')}
+            scaleTarget={0.94}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               gap: 6,
-              paddingVertical: 6,
-              paddingHorizontal: 12,
+              paddingVertical: 7,
+              paddingHorizontal: 14,
               borderRadius: 999,
-              backgroundColor: colores.superficie,
+              backgroundColor: colores.fondo,
               borderWidth: 1,
               borderColor: colores.borde,
               marginTop: 4,
@@ -183,7 +198,7 @@ export function AgregarScreen() {
             <GTexto variante="caption" color={colores.acento} style={{ fontWeight: '600' }}>
               Escanear recibo
             </GTexto>
-          </Pressable>
+          </GAnimatedPressable>
 
           {fecha ? (
             <GTexto
@@ -194,9 +209,12 @@ export function AgregarScreen() {
               {`Fecha del recibo: ${fecha}`}
             </GTexto>
           ) : null}
-        </View>
+        </Animated.View>
 
-        <View style={{ gap: 12 }}>
+        <Animated.View
+          entering={FadeInDown.duration(350).delay(80)}
+          style={{ gap: 12 }}
+        >
           <GTexto variante="eyebrow" color={colores.textoSecundario}>
             Categoría
           </GTexto>
@@ -204,13 +222,14 @@ export function AgregarScreen() {
             {categories.map((category) => {
               const activa = categoryId === category.id;
               return (
-                <Pressable
+                <GAnimatedPressable
                   key={category.id}
                   testID={`categoria-${category.id}`}
                   accessibilityRole="radio"
                   accessibilityLabel={category.name}
                   accessibilityState={{ selected: activa }}
                   onPress={() => setCategoryId(category.id)}
+                  scaleTarget={0.93}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -230,6 +249,8 @@ export function AgregarScreen() {
                       height: scaledSize(14, 1.5),
                       borderRadius: 999,
                       backgroundColor: activa ? colores.sobreAcento : category.color,
+                      borderWidth: activa ? 1.5 : 0,
+                      borderColor: activa ? colores.sobreAcento : 'transparent',
                     }}
                   />
                   <GTexto
@@ -238,35 +259,40 @@ export function AgregarScreen() {
                   >
                     {category.name}
                   </GTexto>
-                </Pressable>
+                </GAnimatedPressable>
               );
             })}
           </View>
-        </View>
+        </Animated.View>
 
-        <SelectorDeCuenta
-          cuentas={cuentas}
-          seleccionada={cuentaElegida}
-          onSeleccionar={setCuentaId}
-        />
+        <Animated.View entering={FadeInDown.duration(350).delay(140)}>
+          <SelectorDeCuenta
+            cuentas={cuentas}
+            seleccionada={cuentaElegida}
+            onSeleccionar={setCuentaId}
+          />
+        </Animated.View>
 
-        <GCampo
-          testID="input-nota"
-          etiqueta="Nota (opcional)"
-          value={note}
-          onChangeText={setNote}
-          placeholder="Cena con Marta"
-          accessibilityLabel="Nota del gasto"
-          multiline
-          textAlignVertical="top"
-          style={{ minHeight: scaledSize(76) }}
-        />
+        <Animated.View entering={FadeInDown.duration(350).delay(180)}>
+          <GCampo
+            testID="input-nota"
+            etiqueta="Nota (opcional)"
+            value={note}
+            onChangeText={setNote}
+            placeholder="Cena con Marta"
+            accessibilityLabel="Nota del gasto"
+            multiline
+            textAlignVertical="top"
+            style={{ minHeight: scaledSize(76) }}
+          />
+        </Animated.View>
       </ScrollView>
 
       {/* Un solo botón para una sola acción. El guardado es idempotente por id
           de cliente, así que el doble tap es inofensivo aunque el usuario
           alcance a presionarlo dos veces. Ver BUG-003. */}
-      <View
+      <Animated.View
+        entering={FadeInUp.duration(350).delay(220)}
         style={{
           paddingHorizontal: 20,
           paddingTop: 14,
@@ -282,7 +308,7 @@ export function AgregarScreen() {
           onPress={onSave}
           accessibilityLabel="Guardar gasto"
         />
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
