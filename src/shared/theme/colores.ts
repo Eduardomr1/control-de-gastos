@@ -26,4 +26,21 @@ export const colores = {
    */
   positivo: '#15803D',
   borde: '#E5E5EA',
+
+  /** Tokens para rediseño Fintech Premium */
+  tarjetaHero: '#0F172A',
+  tarjetaHeroBorde: '#1E293B',
+  tarjetaHeroTexto: '#F8FAFC',
+  tarjetaHeroSubtexto: '#94A3B8',
+  fondoPildora: '#F1F5F9',
+  acentoSuave: '#EEF2FF',
+  positivoSuave: '#DCFCE7',
+  errorSuave: '#FEE2E2',
+  sombraTarjeta: {
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
 } as const;
