@@ -2,6 +2,7 @@ import { Link, router } from 'expo-router';
 import { useEffect, type ReactNode } from 'react';
 import { Alert, Pressable, SectionList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 
 import { formatMonthKey } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
@@ -205,7 +206,8 @@ function ContenidoLista({
         renderItem={({ item, index, section }) => (
           // El recuadro de la tarjeta se arma por fila: SectionList no envuelve
           // sus secciones, así que los bordes y el radio viven en los extremos.
-          <View
+          <Animated.View
+            entering={FadeInRight.delay(Math.min((section.offset + index) * 25, 250)).springify()}
             style={{
               marginHorizontal: 16,
               backgroundColor: colores.superficie,
@@ -229,7 +231,7 @@ function ContenidoLista({
                 onEliminar(item.id, formatMoney(item.amountCents, item.currency))
               }
             />
-          </View>
+          </Animated.View>
         )}
       />
 
