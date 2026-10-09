@@ -1,25 +1,17 @@
 import { Link } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import type { MonthKey } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
-import { GBarraDeProgreso, GTexto } from '@/shared/ui';
+import { GBarraDeProgreso, GTexto, GAnimatedPressable } from '@/shared/ui';
 import type { Category, Expense } from '@/types/expense';
 
 import { fraccionUsada, gastoPorCategoria, presupuestoVigente } from '../progreso';
 import type { Presupuesto } from '../types';
 
 /**
- * Las barras del mes, una por categoría con límite.
- *
- * Presentacional a propósito: recibe presupuestos y gastos en vez de pedirlos
- * con sus propios hooks. Así la pantalla que lo monta puede meter ambas
- * consultas en el mismo `GAsyncGate` y las barras nunca aparecen después del
- * resto, con un porcentaje que cambia bajo el pulgar (BUG-006).
- *
- * Sin ningún límite fijado no muestra barras vacías: muestra la invitación a
- * fijarlos. Una lista de ceros no informa de nada.
+ * Resumen de presupuestos del mes con barras de progreso animadas.
  */
 export function ResumenDePresupuestos({
   presupuestos,
@@ -44,12 +36,18 @@ export function ResumenDePresupuestos({
   return (
     <View
       style={{
-        paddingHorizontal: 20,
+        marginHorizontal: 16,
+        marginTop: 12,
+        marginBottom: 8,
+        paddingHorizontal: 18,
         paddingTop: 16,
         paddingBottom: 16,
+        borderRadius: 20,
+        backgroundColor: colores.superficie,
+        borderWidth: 1,
+        borderColor: colores.borde,
         gap: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: colores.borde,
+        ...colores.sombraTarjeta,
       }}
       testID="resumen-presupuestos"
     >
@@ -66,16 +64,24 @@ export function ResumenDePresupuestos({
           Presupuestos
         </GTexto>
         <Link href="/presupuestos" asChild>
-          <Pressable
+          <GAnimatedPressable
             testID="btn-configurar-presupuestos"
             accessibilityRole="button"
             accessibilityLabel="Configurar presupuestos"
-            style={{ minHeight: 44, justifyContent: 'center' }}
+            scaleTarget={0.93}
+            style={{
+              minHeight: 34,
+              paddingHorizontal: 12,
+              borderRadius: 999,
+              backgroundColor: colores.fondoPildora,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
           >
-            <GTexto variante="caption" color={colores.acento}>
+            <GTexto variante="caption" color={colores.acento} style={{ fontWeight: '700' }}>
               {conLimite.length === 0 ? 'Fijar límites' : 'Editar'}
             </GTexto>
-          </Pressable>
+          </GAnimatedPressable>
         </Link>
       </View>
 
@@ -105,9 +111,7 @@ export function ResumenDePresupuestos({
 }
 
 /**
- * Ambar al 80% y rojo al pasarse. El ambar no esta en la paleta porque solo
- * lo usa esta barra: un color de un solo uso se queda como literal donde vive
- * (ver el comentario de `colores.ts`).
+ * Ámbar al 80% y rojo al pasarse.
  */
 function colorDeAvance(fraccion: number): string {
   if (fraccion >= 1) return colores.error;
