@@ -9,13 +9,14 @@ import Animated, {
   FadeInDown,
 } from 'react-native-reanimated';
 
-import { formatMoney, sumCents } from '@/shared/lib/money';
+import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { scaledSize } from '@/shared/theme/tipografia';
 import { GAnimatedPressable, GTexto } from '@/shared/ui';
 
 import type { TajadaDeCategoria } from '../agregados';
 import { sectores } from '../donut';
+import { calcularDetalleSeleccion } from '../seleccion';
 
 const RADIO = 90;
 const GROSOR = 34;
@@ -44,7 +45,6 @@ export function AnilloDeCategorias({ tajadas }: { tajadas: readonly TajadaDeCate
     ],
   }));
 
-  const total = sumCents(tajadas.map((t) => t.totalCents));
   const arcos = sectores(
     tajadas.map((t) => ({ key: t.categoryId, valor: t.totalCents, color: t.color })),
     RADIO,
@@ -59,9 +59,7 @@ export function AnilloDeCategorias({ tajadas }: { tajadas: readonly TajadaDeCate
     );
   }
 
-  const tajadaActiva = seleccionada
-    ? tajadas.find((t) => t.categoryId === seleccionada)
-    : null;
+  const detalle = calcularDetalleSeleccion(tajadas, seleccionada);
 
   return (
     <View style={{ gap: 20 }} testID="anillo-categorias">
@@ -95,22 +93,22 @@ export function AnilloDeCategorias({ tajadas }: { tajadas: readonly TajadaDeCate
         >
           <GTexto
             variante="caption"
-            color={tajadaActiva ? tajadaActiva.color : colores.textoSecundario}
-            style={{ fontWeight: tajadaActiva ? '700' : '500' }}
+            color={detalle.activa ? detalle.activa.color : colores.textoSecundario}
+            style={{ fontWeight: detalle.activa ? '700' : '500' }}
             numberOfLines={1}
           >
-            {tajadaActiva ? tajadaActiva.nombre : 'Total'}
+            {detalle.etiqueta}
           </GTexto>
           <GTexto
             color={colores.texto}
             style={{ fontSize: scaledSize(18, 1.3), fontWeight: '700' }}
             testID="total-reporte"
           >
-            {formatMoney(tajadaActiva ? tajadaActiva.totalCents : total)}
+            {formatMoney(detalle.montoCents)}
           </GTexto>
-          {tajadaActiva ? (
+          {detalle.activa ? (
             <GTexto variante="caption" color={colores.textoSecundario}>
-              {`${tajadaActiva.porcentaje}% del mes`}
+              {`${detalle.porcentaje}% del mes`}
             </GTexto>
           ) : null}
         </Animated.View>
