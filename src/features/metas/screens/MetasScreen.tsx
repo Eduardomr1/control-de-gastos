@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DateError } from '@/shared/lib/date';
@@ -13,7 +14,7 @@ import { useMetas, useMutacionesDeMetas } from '../hooks/useMetas';
 import type { Meta } from '../types';
 
 /**
- * Metas de ahorro: lista con progreso, aporte manual y alta.
+ * Metas de ahorro: lista con progreso animado, aporte manual y alta.
  *
  * El aporte NO se descuenta de ninguna cuenta, aunque el plan lo dejaba como
  * opción. Descontarlo obligaría a registrarlo como un gasto —y apartar dinero
@@ -51,8 +52,6 @@ export function MetasScreen() {
           setObjetivo('');
           setFechaLimite('');
         },
-        // El backend valida el monto y la fecha: el mensaje de su error es el
-        // que se muestra, para no tener la regla escrita dos veces.
         onError: (e) =>
           setError(
             e instanceof MoneyError || e instanceof DateError
@@ -109,14 +108,18 @@ export function MetasScreen() {
             Sin metas. Ponle nombre y monto a lo que quieres juntar y ve apartando.
           </GTexto>
         ) : (
-          metas.map((meta) => (
-            <TarjetaDeMeta
+          metas.map((meta, index) => (
+            <Animated.View
               key={meta.id}
-              meta={meta}
-              aportando={aportar.isPending}
-              onAportar={(montoCents) => aportar.mutateAsync({ id: meta.id, montoCents })}
-              onEliminar={() => confirmarEliminar(meta)}
-            />
+              entering={FadeInDown.delay(index * 50).duration(280)}
+            >
+              <TarjetaDeMeta
+                meta={meta}
+                aportando={aportar.isPending}
+                onAportar={(montoCents) => aportar.mutateAsync({ id: meta.id, montoCents })}
+                onEliminar={() => confirmarEliminar(meta)}
+              />
+            </Animated.View>
           ))
         )}
 
@@ -142,8 +145,6 @@ export function MetasScreen() {
             placeholder="0.00"
             accessibilityLabel="Monto objetivo"
           />
-          {/* Campo de texto y no un selector de fecha: el selector nativo es
-              una dependencia más para un dato opcional que casi nadie llena. */}
           <GCampo
             testID="input-fecha-limite"
             etiqueta="Para cuándo (opcional)"
@@ -210,6 +211,7 @@ function TarjetaDeMeta({
         borderWidth: 1,
         borderColor: colores.borde,
         backgroundColor: colores.superficie,
+        ...colores.sombraTarjeta,
       }}
     >
       <GBarraDeProgreso
@@ -218,14 +220,24 @@ function TarjetaDeMeta({
         detalle={`${formatMoney(meta.actualCents)} de ${formatMoney(meta.objetivoCents)}`}
         actualCents={meta.actualCents}
         objetivoCents={meta.objetivoCents}
-        // Al revés que en presupuestos: aquí pasarse es la buena noticia.
         color={cumplida ? colores.positivo : colores.acento}
+        mostrarPorcentaje={true}
       />
 
       {cumplida ? (
-        <GTexto variante="caption" color={colores.positivo} style={{ fontWeight: '600' }}>
-          Meta cumplida
-        </GTexto>
+        <View
+          style={{
+            alignSelf: 'flex-start',
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 8,
+            backgroundColor: colores.positivoSuave,
+          }}
+        >
+          <GTexto variante="caption" color={colores.positivo} style={{ fontWeight: '700' }}>
+            🎉 Meta cumplida
+          </GTexto>
+        </View>
       ) : (
         <GTexto variante="caption" color={colores.textoSecundario}>
           {`Faltan ${formatMoney(meta.objetivoCents - meta.actualCents)}`}
