@@ -1,28 +1,146 @@
-import { Pressable, View } from 'react-native';
+import { useEffect } from 'react';
+import { View } from 'react-native';
+import Animated, {
+  Easing,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { formatMonthKey, formatMonthName, type MonthKey } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { scaledSize } from '@/shared/theme/tipografia';
-import { GTexto } from '@/shared/ui';
+import { GAnimatedPressable, GTexto } from '@/shared/ui';
 
 import type { BarraDeMes } from '../agregados';
 
+interface BarraMesItemProps {
+  barra: BarraDeMes;
+  maximo: number;
+  index: number;
+  activo: boolean;
+  onSeleccionar?: ((mes: MonthKey) => void) | undefined;
+}
+
+function BarraMesItem({
+  barra,
+  maximo,
+  index,
+  activo,
+  onSeleccionar,
+}: BarraMesItemProps) {
+  const porcentajeObjetivo = Math.min(100, Math.max(0, (barra.totalCents / maximo) * 100));
+  const animProgress = useSharedValue(0);
+
+  useEffect(() => {
+    animProgress.value = 0;
+    animProgress.value = withDelay(
+      index * 60,
+      withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) })
+    );
+  }, [barra.totalCents, maximo, index, animProgress]);
+
+  const barAnimatedStyle = useAnimatedStyle(() => ({
+    width: `${animProgress.value * porcentajeObjetivo}%`,
+  }));
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 40).duration(260)}>
+      <GAnimatedPressable
+        testID={`barra-${barra.mes}`}
+        accessibilityRole={onSeleccionar ? 'radio' : 'progressbar'}
+        accessibilityState={onSeleccionar ? { selected: activo } : undefined}
+        accessibilityLabel={`${formatMonthKey(barra.mes)}: ${formatMoney(barra.totalCents)}`}
+        onPress={onSeleccionar ? () => onSeleccionar(barra.mes) : undefined}
+        scaleTarget={0.98}
+        style={{
+          gap: 6,
+          minHeight: 44,
+          justifyContent: 'center',
+          paddingVertical: 8,
+          paddingHorizontal: 12,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: activo ? colores.acento : 'transparent',
+          backgroundColor: activo ? colores.superficie : 'transparent',
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 8,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <GTexto
+              variante="caption"
+              color={colores.texto}
+              style={{ fontWeight: activo ? '700' : '500' }}
+            >
+              {formatMonthName(barra.mes)}
+            </GTexto>
+            {activo ? (
+              <View
+                style={{
+                  paddingHorizontal: 6,
+                  paddingVertical: 1,
+                  borderRadius: 6,
+                  backgroundColor: colores.acentoSuave,
+                }}
+              >
+                <GTexto
+                  variante="caption"
+                  color={colores.acento}
+                  style={{ fontSize: scaledSize(10, 1.2), fontWeight: '700' }}
+                >
+                  Mes activo
+                </GTexto>
+              </View>
+            ) : null}
+          </View>
+
+          <GTexto
+            variante="caption"
+            color={activo ? colores.texto : colores.textoSecundario}
+            style={{ fontWeight: activo ? '700' : '500' }}
+          >
+            {formatMoney(barra.totalCents)}
+          </GTexto>
+        </View>
+
+        <View
+          style={{
+            minHeight: scaledSize(10, 1.5),
+            borderRadius: 999,
+            backgroundColor: colores.borde,
+            overflow: 'hidden',
+          }}
+        >
+          <Animated.View
+            style={[
+              barAnimatedStyle,
+              {
+                minHeight: scaledSize(10, 1.5),
+                borderRadius: 999,
+                backgroundColor: activo ? colores.acento : colores.acentoDeshabilitado,
+              },
+            ]}
+          />
+        </View>
+      </GAnimatedPressable>
+    </Animated.View>
+  );
+}
+
 /**
- * Comparativo mes a mes, y a la vez el selector de periodo.
- *
- * Barras horizontales y con `View`, sin SVG: una barra es un rectángulo de
- * ancho porcentual, y eso es exactamente lo que ya sabe hacer el layout. El
- * SVG del anillo existe porque un arco no se puede dibujar con cajas; una
- * barra sí.
- *
- * Horizontales y no verticales: la etiqueta del mes cabe completa al lado, y
- * al ampliar la fuente la barra se estira en lugar de aplastar el texto.
- *
- * Toda la lista se dibuja junta —no una barra por componente— porque el ancho
- * de cada una es relativo al mes más alto del conjunto. Una barra que no
- * conoce a sus vecinas siempre se pinta al 100%, y el comparativo deja de
- * comparar.
+ * Comparativo mes a mes, y a la vez el selector de periodo con animaciones
+ * fluidas secuenciales de crecimiento en el hilo nativo de UI.
  */
 export function BarrasPorMes({
   barras,
@@ -37,69 +155,17 @@ export function BarrasPorMes({
 
   return (
     <View style={{ gap: 4 }} testID="barras-por-mes">
-      {barras.map((barra) => {
+      {barras.map((barra, index) => {
         const activo = barra.mes === seleccionado;
         return (
-          <Pressable
+          <BarraMesItem
             key={barra.mes}
-            testID={`barra-${barra.mes}`}
-            accessibilityRole={onSeleccionar ? 'radio' : 'progressbar'}
-            accessibilityState={onSeleccionar ? { selected: activo } : undefined}
-            accessibilityLabel={`${formatMonthKey(barra.mes)}: ${formatMoney(barra.totalCents)}`}
-            onPress={onSeleccionar ? () => onSeleccionar(barra.mes) : undefined}
-            style={{
-              gap: 6,
-              minHeight: 44,
-              justifyContent: 'center',
-              paddingVertical: 8,
-              paddingHorizontal: 10,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: activo ? colores.borde : 'transparent',
-              backgroundColor: activo ? colores.superficie : 'transparent',
-            }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 8,
-              }}
-            >
-              <GTexto
-                variante="caption"
-                color={colores.texto}
-                style={activo ? { fontWeight: '700' } : undefined}
-              >
-                {formatMonthName(barra.mes)}
-              </GTexto>
-              <GTexto variante="caption" color={colores.textoSecundario}>
-                {formatMoney(barra.totalCents)}
-              </GTexto>
-            </View>
-
-            <View
-              style={{
-                minHeight: scaledSize(10, 1.5),
-                borderRadius: 999,
-                backgroundColor: colores.borde,
-                overflow: 'hidden',
-              }}
-            >
-              <View
-                style={{
-                  // Relativo al mes más alto, no a un tope fijo: la comparación
-                  // es entre meses, y con un tope absoluto todas las barras se
-                  // verían igual de cortas en un periodo tranquilo.
-                  width: `${(barra.totalCents / maximo) * 100}%`,
-                  minHeight: scaledSize(10, 1.5),
-                  borderRadius: 999,
-                  backgroundColor: activo ? colores.acento : colores.acentoDeshabilitado,
-                }}
-              />
-            </View>
-          </Pressable>
+            barra={barra}
+            maximo={maximo}
+            index={index}
+            activo={activo}
+            onSeleccionar={onSeleccionar}
+          />
         );
       })}
     </View>
