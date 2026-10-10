@@ -16,23 +16,19 @@ import { scaledSize } from '@/shared/theme/tipografia';
 import { GAnimatedPressable, GTexto } from '@/shared/ui';
 
 import type { BarraDeMes } from '../agregados';
+import { calcularMetricasBarras, type MetricaBarraMes } from '../seleccion';
 
 interface BarraMesItemProps {
-  barra: BarraDeMes;
-  maximo: number;
+  metrica: MetricaBarraMes;
   index: number;
-  activo: boolean;
   onSeleccionar?: ((mes: MonthKey) => void) | undefined;
 }
 
 function BarraMesItem({
-  barra,
-  maximo,
+  metrica,
   index,
-  activo,
   onSeleccionar,
 }: BarraMesItemProps) {
-  const porcentajeObjetivo = Math.min(100, Math.max(0, (barra.totalCents / maximo) * 100));
   const animProgress = useSharedValue(0);
 
   useEffect(() => {
@@ -41,20 +37,20 @@ function BarraMesItem({
       index * 60,
       withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) })
     );
-  }, [barra.totalCents, maximo, index, animProgress]);
+  }, [metrica.totalCents, metrica.porcentajeRelativo, index, animProgress]);
 
   const barAnimatedStyle = useAnimatedStyle(() => ({
-    width: `${animProgress.value * porcentajeObjetivo}%`,
+    width: `${animProgress.value * metrica.porcentajeRelativo}%`,
   }));
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 40).duration(260)}>
       <GAnimatedPressable
-        testID={`barra-${barra.mes}`}
+        testID={`barra-${metrica.mes}`}
         accessibilityRole={onSeleccionar ? 'radio' : 'progressbar'}
-        accessibilityState={onSeleccionar ? { selected: activo } : undefined}
-        accessibilityLabel={`${formatMonthKey(barra.mes)}: ${formatMoney(barra.totalCents)}`}
-        onPress={onSeleccionar ? () => onSeleccionar(barra.mes) : undefined}
+        accessibilityState={onSeleccionar ? { selected: metrica.esActivo } : undefined}
+        accessibilityLabel={`${formatMonthKey(metrica.mes)}: ${formatMoney(metrica.totalCents)}`}
+        onPress={onSeleccionar ? () => onSeleccionar(metrica.mes) : undefined}
         scaleTarget={0.98}
         style={{
           gap: 6,
@@ -64,8 +60,8 @@ function BarraMesItem({
           paddingHorizontal: 12,
           borderRadius: 12,
           borderWidth: 1,
-          borderColor: activo ? colores.acento : 'transparent',
-          backgroundColor: activo ? colores.superficie : 'transparent',
+          borderColor: metrica.esActivo ? colores.acento : 'transparent',
+          backgroundColor: metrica.esActivo ? colores.superficie : 'transparent',
         }}
       >
         <View
@@ -81,11 +77,11 @@ function BarraMesItem({
             <GTexto
               variante="caption"
               color={colores.texto}
-              style={{ fontWeight: activo ? '700' : '500' }}
+              style={{ fontWeight: metrica.esActivo ? '700' : '500' }}
             >
-              {formatMonthName(barra.mes)}
+              {formatMonthName(metrica.mes)}
             </GTexto>
-            {activo ? (
+            {metrica.esActivo ? (
               <View
                 style={{
                   paddingHorizontal: 6,
@@ -107,10 +103,10 @@ function BarraMesItem({
 
           <GTexto
             variante="caption"
-            color={activo ? colores.texto : colores.textoSecundario}
-            style={{ fontWeight: activo ? '700' : '500' }}
+            color={metrica.esActivo ? colores.texto : colores.textoSecundario}
+            style={{ fontWeight: metrica.esActivo ? '700' : '500' }}
           >
-            {formatMoney(barra.totalCents)}
+            {formatMoney(metrica.totalCents)}
           </GTexto>
         </View>
 
@@ -128,7 +124,7 @@ function BarraMesItem({
               {
                 minHeight: scaledSize(10, 1.5),
                 borderRadius: 999,
-                backgroundColor: activo ? colores.acento : colores.acentoDeshabilitado,
+                backgroundColor: metrica.esActivo ? colores.acento : colores.acentoDeshabilitado,
               },
             ]}
           />
@@ -149,25 +145,20 @@ export function BarrasPorMes({
 }: {
   barras: readonly BarraDeMes[];
   seleccionado?: MonthKey;
-  onSeleccionar?: (mes: MonthKey) => void;
+  onSeleccionar?: ((mes: MonthKey) => void) | undefined;
 }) {
-  const maximo = Math.max(...barras.map((b) => b.totalCents), 1);
+  const metricas = calcularMetricasBarras(barras, seleccionado);
 
   return (
     <View style={{ gap: 4 }} testID="barras-por-mes">
-      {barras.map((barra, index) => {
-        const activo = barra.mes === seleccionado;
-        return (
-          <BarraMesItem
-            key={barra.mes}
-            barra={barra}
-            maximo={maximo}
-            index={index}
-            activo={activo}
-            onSeleccionar={onSeleccionar}
-          />
-        );
-      })}
+      {metricas.map((metrica, index) => (
+        <BarraMesItem
+          key={metrica.mes}
+          metrica={metrica}
+          index={index}
+          onSeleccionar={onSeleccionar}
+        />
+      ))}
     </View>
   );
 }
