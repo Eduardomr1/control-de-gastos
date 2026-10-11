@@ -1,13 +1,14 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ScrollView, TextInput, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SelectorDeCuenta, useCuentas } from '@/features/cuentas';
 import { MoneyError, parseAmount } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { scaledSize, typography } from '@/shared/theme/tipografia';
-import { GBoton, GCampo, GTexto } from '@/shared/ui';
+import { GAnimatedPressable, GBoton, GCampo, GTexto } from '@/shared/ui';
 
 import { draftOccurredAt } from '../api/ingresos.local';
 import { useCrearIngreso } from '../hooks/useCrearIngreso';
@@ -69,17 +70,18 @@ export function AgregarIngresoScreen() {
           borderBottomColor: colores.borde,
         }}
       >
-        <Pressable
+        <GAnimatedPressable
           testID="btn-cancelar"
           accessibilityRole="button"
           accessibilityLabel="Cancelar"
           onPress={() => router.back()}
+          scaleTarget={0.92}
           style={{ minHeight: 44, justifyContent: 'center' }}
         >
           <GTexto variante="body" color={colores.acento} style={{ fontWeight: '600' }}>
             Cancelar
           </GTexto>
-        </Pressable>
+        </GAnimatedPressable>
 
         <GTexto variante="label" style={{ fontWeight: '600' }}>
           Nuevo ingreso
@@ -90,10 +92,23 @@ export function AgregarIngresoScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 22 }}
+        contentContainerStyle={{ padding: 20, gap: 20 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ alignItems: 'center', gap: 10, paddingVertical: 12 }}>
+        <Animated.View
+          entering={FadeInDown.duration(350)}
+          style={{
+            alignItems: 'center',
+            gap: 10,
+            paddingVertical: 18,
+            paddingHorizontal: 16,
+            borderRadius: 16,
+            backgroundColor: colores.superficie,
+            borderWidth: 1,
+            borderColor: colores.borde,
+            ...colores.sombraTarjeta,
+          }}
+        >
           <GTexto variante="eyebrow" color={colores.textoSecundario}>
             Monto
           </GTexto>
@@ -142,9 +157,12 @@ export function AgregarIngresoScreen() {
               {error}
             </GTexto>
           ) : null}
-        </View>
+        </Animated.View>
 
-        <View style={{ gap: 12 }}>
+        <Animated.View
+          entering={FadeInDown.delay(60).duration(300)}
+          style={{ gap: 12 }}
+        >
           <GTexto variante="eyebrow" color={colores.textoSecundario}>
             Fuente
           </GTexto>
@@ -152,13 +170,14 @@ export function AgregarIngresoScreen() {
             {FUENTES.map((opcion) => {
               const activa = fuente === opcion;
               return (
-                <Pressable
+                <GAnimatedPressable
                   key={opcion}
                   testID={`fuente-${opcion.toLowerCase()}`}
                   accessibilityRole="radio"
                   accessibilityLabel={opcion}
                   accessibilityState={{ selected: activa }}
                   onPress={() => setFuente(opcion)}
+                  scaleTarget={0.94}
                   style={{
                     minHeight: 48,
                     paddingHorizontal: 16,
@@ -171,33 +190,37 @@ export function AgregarIngresoScreen() {
                 >
                   <GTexto
                     color={activa ? colores.sobreAcento : colores.texto}
-                    style={{ fontWeight: '600' }}
+                    style={{ fontWeight: activa ? '700' : '600' }}
                   >
                     {opcion}
                   </GTexto>
-                </Pressable>
+                </GAnimatedPressable>
               );
             })}
           </View>
-        </View>
+        </Animated.View>
 
-        <SelectorDeCuenta
-          cuentas={cuentas}
-          seleccionada={cuentaElegida}
-          onSeleccionar={setCuentaId}
-        />
+        <Animated.View entering={FadeInDown.delay(120).duration(300)}>
+          <SelectorDeCuenta
+            cuentas={cuentas}
+            seleccionada={cuentaElegida}
+            onSeleccionar={setCuentaId}
+          />
+        </Animated.View>
 
-        <GCampo
-          testID="input-nota"
-          etiqueta="Nota (opcional)"
-          value={note}
-          onChangeText={setNote}
-          placeholder="Quincena de septiembre"
-          accessibilityLabel="Nota del ingreso"
-          multiline
-          textAlignVertical="top"
-          style={{ minHeight: scaledSize(76) }}
-        />
+        <Animated.View entering={FadeInDown.delay(180).duration(300)}>
+          <GCampo
+            testID="input-nota"
+            etiqueta="Nota (opcional)"
+            value={note}
+            onChangeText={setNote}
+            placeholder="Quincena de septiembre"
+            accessibilityLabel="Nota del ingreso"
+            multiline
+            textAlignVertical="top"
+            style={{ minHeight: scaledSize(76) }}
+          />
+        </Animated.View>
       </ScrollView>
 
       <View
