@@ -101,6 +101,49 @@ ataca la causa.
 Es la parte con más superficie de error del proyecto, así que está construida
 para que cada pieza sea verificable por separado.
 
+> 📖 **Diagrama detallado de ingeniería:** Consulta [docs/arquitectura/README.md](../docs/arquitectura/README.md) y [docs/arquitectura/control-de-gastos-offline-first.md](../docs/arquitectura/control-de-gastos-offline-first.md) para el análisis exhaustivo de tolerancia a fallos.
+
+```mermaid
+flowchart TD
+    subgraph UI_Layer["Capa de Presentación (React Native / Expo)"]
+        User["👤 Usuario"] --> Form["Formulario de Gastos"]
+        Form --> Valid["Validación de Dominio<br/>assertCents() + Generación UUID"]
+        Valid --> RQ["TanStack Query<br/>(Cache en Memoria)"]
+    end
+
+    subgraph Storage_Layer["Almacenamiento Local en Dispositivo"]
+        Valid -->|"Escritura Síncrona"| MMKV["Cola de Sincronización MMKV<br/>(Persistente / Sobrevive App Kill)"]
+        Valid -->|"Escritura Síncrona"| SQLite["Réplica Local SQLite (gastos.db)<br/>(Consultas y Lectura Offline)"]
+    end
+
+    subgraph Engine_Layer["Motor de Sincronización (Sync Engine)"]
+        NetMon{"Detector de Red<br/>(NetInfo)"}
+        QueueWorker["Queue Worker<br/>(Procesamiento FIFO)"]
+        ConflictResolver["Reconciliador de Conflictos<br/>resolveConflict() (Last-Write-Wins)"]
+        
+        MMKV -.->|"Leer pendientes"| QueueWorker
+        NetMon -->|"Online"| QueueWorker
+        QueueWorker --> ConflictResolver
+    end
+
+    subgraph Cloud_Layer["Nube Supabase (PostgreSQL)"]
+        RPC["RPC Postgres<br/>sync_expense(UUID, ...)"]
+        PullRPC["RPC Postgres<br/>pull_changes(cursor)"]
+        RLS["Políticas Row Level Security (RLS)"]
+        Tables[("Tabla Gastos<br/>PostgreSQL")]
+        
+        RPC --> RLS --> Tables
+        Tables --> PullRPC
+    end
+
+    QueueWorker ==>|"HTTP POST (Idempotente)"| RPC
+    PullRPC ==>|"Delta de cambios remotos"| ConflictResolver
+    ConflictResolver -->|"Actualizar réplica"| SQLite
+    ConflictResolver -->|"Eliminar confirmado"| MMKV
+    ConflictResolver -->|"Invalidar consultas"| RQ
+    RQ -->|"Reactividad UI"| Form
+```
+
 **Escribir.** Un gasto nuevo recibe su UUID en el cliente y entra a dos sitios en
 disco: la **cola** en MMKV (lo que falta enviar) y la **copia local** en SQLite
 (lo que se lee). La escritura es síncrona, así que ambas están en disco antes de
