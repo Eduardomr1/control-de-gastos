@@ -1,14 +1,15 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, View } from 'react-native';
+import { Alert, ScrollView, Switch, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useCategorias } from '@/features/categorias';
 import { formatDayShort, nowLocalIso } from '@/shared/lib/date';
-import { MoneyError, formatMoney, parseAmount } from '@/shared/lib/money';
+import { formatMoney } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { scaledSize } from '@/shared/theme/tipografia';
-import { GBoton, GCampo, GTexto } from '@/shared/ui';
+import { GAnimatedPressable, GBoton, GCampo, GTexto } from '@/shared/ui';
 
 import { proximaOcurrencia } from '../calendario';
 import {
@@ -21,6 +22,7 @@ import {
   type Frecuencia,
   type Recurrente,
 } from '../types';
+import { validarEntradaRecurrente } from '../validacion';
 
 /**
  * Lista y alta de movimientos recurrentes.
@@ -40,36 +42,35 @@ export function RecurrentesScreen() {
   const [error, setError] = useState<string | null>(null);
 
   function onAgregar() {
-    try {
-      setError(null);
-      if (nombre.trim() === '') {
-        setError('Ponle un nombre para reconocerlo');
-        return;
-      }
-      crear.mutate(
-        {
-          tipo: 'gasto',
-          nombre: nombre.trim(),
-          amountCents: parseAmount(monto),
-          currency: 'MXN',
-          categoryId: categorias[0]?.id ?? 'otros',
-          frecuencia,
-          // Arranca hoy: el primer cobro es el de hoy mismo y el generador lo
-          // materializa en esta misma sesión. Dejarlo para el mes siguiente
-          // obligaría a explicar por qué no pasó nada al guardar.
-          inicio: nowLocalIso(),
-          activo: true,
-        },
-        {
-          onSuccess: () => {
-            setNombre('');
-            setMonto('');
-          },
-        },
-      );
-    } catch (e) {
-      setError(e instanceof MoneyError ? e.message : 'Monto inválido');
+    const validacion = validarEntradaRecurrente({
+      nombre,
+      montoText: monto,
+      frecuencia,
+      categoryId: categorias[0]?.id ?? 'otros',
+    });
+
+    if (!validacion.esValido) {
+      setError(validacion.error);
+      return;
     }
+
+    setError(null);
+    crear.mutate(
+      {
+        ...validacion.payload,
+        // Arranca hoy: el primer cobro es el de hoy mismo y el generador lo
+        // materializa en esta misma sesión. Dejarlo para el mes siguiente
+        // obligaría a explicar por qué no pasó nada al guardar.
+        inicio: nowLocalIso(),
+        activo: true,
+      },
+      {
+        onSuccess: () => {
+          setNombre('');
+          setMonto('');
+        },
+      },
+    );
   }
 
   function confirmarEliminar(r: Recurrente) {
@@ -100,17 +101,18 @@ export function RecurrentesScreen() {
           borderBottomColor: colores.borde,
         }}
       >
-        <Pressable
+        <GAnimatedPressable
           testID="btn-cancelar"
           accessibilityRole="button"
           accessibilityLabel="Cerrar"
           onPress={() => router.back()}
+          scaleTarget={0.92}
           style={{ minHeight: 44, justifyContent: 'center' }}
         >
           <GTexto variante="body" color={colores.acento} style={{ fontWeight: '600' }}>
             Cerrar
           </GTexto>
-        </Pressable>
+        </GAnimatedPressable>
 
         <GTexto variante="label" style={{ fontWeight: '600' }}>
           Recurrentes
@@ -129,22 +131,30 @@ export function RecurrentesScreen() {
             solos y te avisan dos días antes.
           </GTexto>
         ) : (
-          recurrentes.map((r) => (
-            <FilaRecurrente
+          recurrentes.map((r, index) => (
+            <Animated.View
               key={r.id}
-              recurrente={r}
-              onAlternar={(activo) => alternar.mutate({ id: r.id, activo })}
-              onEliminar={() => confirmarEliminar(r)}
-            />
+              entering={FadeInDown.delay(index * 45).springify()}
+            >
+              <FilaRecurrente
+                recurrente={r}
+                onAlternar={(activo) => alternar.mutate({ id: r.id, activo })}
+                onEliminar={() => confirmarEliminar(r)}
+              />
+            </Animated.View>
           ))
         )}
 
-        <View
+        <Animated.View
+          entering={FadeInDown.delay(120).duration(350)}
           style={{
             gap: 14,
-            paddingTop: 18,
-            borderTopWidth: 1,
-            borderTopColor: colores.borde,
+            padding: 18,
+            borderRadius: 20,
+            backgroundColor: colores.superficie,
+            borderWidth: 1,
+            borderColor: colores.borde,
+            ...colores.sombraTarjeta,
           }}
         >
           <GTexto variante="eyebrow" color={colores.textoSecundario}>
@@ -174,13 +184,14 @@ export function RecurrentesScreen() {
             {FRECUENCIAS.map((opcion) => {
               const activa = frecuencia === opcion;
               return (
-                <Pressable
+                <GAnimatedPressable
                   key={opcion}
                   testID={`frecuencia-${opcion}`}
                   accessibilityRole="radio"
                   accessibilityLabel={ETIQUETA_FRECUENCIA[opcion]}
                   accessibilityState={{ selected: activa }}
                   onPress={() => setFrecuencia(opcion)}
+                  scaleTarget={0.94}
                   style={{
                     minHeight: 48,
                     justifyContent: 'center',
@@ -197,7 +208,7 @@ export function RecurrentesScreen() {
                   >
                     {ETIQUETA_FRECUENCIA[opcion]}
                   </GTexto>
-                </Pressable>
+                </GAnimatedPressable>
               );
             })}
           </View>
@@ -215,7 +226,7 @@ export function RecurrentesScreen() {
             onPress={onAgregar}
             accessibilityLabel="Agregar recurrente"
           />
-        </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -237,11 +248,12 @@ function FilaRecurrente({
   );
 
   return (
-    <Pressable
+    <GAnimatedPressable
       testID={`recurrente-${recurrente.id}`}
       onLongPress={onEliminar}
       accessibilityLabel={`${recurrente.nombre}, ${formatMoney(recurrente.amountCents, recurrente.currency)}, ${ETIQUETA_FRECUENCIA[recurrente.frecuencia]}`}
       accessibilityHint="Mantén presionado para eliminar"
+      scaleTarget={0.98}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -249,22 +261,23 @@ function FilaRecurrente({
         gap: 12,
         minHeight: 64,
         paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderRadius: 16,
+        paddingVertical: 14,
+        borderRadius: 18,
         borderWidth: 1,
         borderColor: colores.borde,
         backgroundColor: colores.superficie,
+        ...colores.sombraTarjeta,
       }}
     >
-      <View style={{ flex: 1, gap: 2 }}>
-        <GTexto variante="label" style={{ fontWeight: '600' }}>
+      <View style={{ flex: 1, gap: 3 }}>
+        <GTexto variante="label" style={{ fontWeight: '700' }}>
           {recurrente.nombre}
         </GTexto>
         <GTexto variante="caption" color={colores.textoSecundario}>
           {`${formatMoney(recurrente.amountCents, recurrente.currency)} · ${ETIQUETA_FRECUENCIA[recurrente.frecuencia]}`}
         </GTexto>
         {recurrente.activo && proxima ? (
-          <GTexto variante="caption" color={colores.textoSecundario}>
+          <GTexto variante="caption" color={colores.acento} style={{ fontWeight: '600' }}>
             {`Próximo: ${formatDayShort(proxima)}`}
           </GTexto>
         ) : null}
@@ -277,6 +290,6 @@ function FilaRecurrente({
         accessibilityLabel={`Activar ${recurrente.nombre}`}
         trackColor={{ true: colores.acento, false: colores.borde }}
       />
-    </Pressable>
+    </GAnimatedPressable>
   );
 }
