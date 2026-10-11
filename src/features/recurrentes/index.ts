@@ -6,4 +6,5 @@
 export { RecurrentesScreen } from './screens/RecurrentesScreen';
 export { useRecurrentes, useArranqueDeRecurrentes } from './hooks/useRecurrentes';
 export { limpiarRecurrentes } from './api/recurrentes.local';
+export { validarEntradaRecurrente } from './validacion';
 export type { Recurrente } from './types';
