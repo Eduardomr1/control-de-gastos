@@ -13,4 +13,22 @@ export type { ValidacionGastoInput, GastoPayloadValidado } from './validacion';
 export { HeaderColapsable } from './components/HeaderColapsable';
 export { calcularMetricasDashboard } from './balance';
 export type { MetricasDashboard } from './balance';
+export {
+  determinarDireccionSwipe,
+  calcularDesplazamientoSwipe,
+  calcularEstadoSwipe,
+  calcularFeedbackVisualSwipe,
+  resolverReleaseSwipe,
+  generarA11yAccionSwipe,
+  CONFIG_SWIPE_PREDETERMINADA,
+} from './swipe';
+export type {
+  ConfiguracionSwipe,
+  DireccionSwipe,
+  TipoAccionSwipe,
+  EstadoSwipe,
+  FeedbackVisualSwipe,
+  DecisionReleaseSwipe,
+} from './swipe';
 export { createExpense as crearGasto, fetchExpenses as obtenerGastos } from './api';
+

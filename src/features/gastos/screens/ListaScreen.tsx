@@ -263,6 +263,9 @@ function ContenidoLista({
               onLongPress={() =>
                 onEliminar(item.id, formatMoney(item.amountCents, item.currency))
               }
+              onSwipeEliminar={() =>
+                onEliminar(item.id, formatMoney(item.amountCents, item.currency))
+              }
             />
           </Animated.View>
         )}
