@@ -3,9 +3,9 @@ import { parseAmount } from '@/shared/lib/money';
 export interface ValidacionGastoInput {
   readonly amountText: string;
   readonly categoryId: string;
-  readonly noteText?: string;
-  readonly cuentaId?: string;
-  readonly reciboUri?: string;
+  readonly noteText?: string | undefined;
+  readonly cuentaId?: string | undefined;
+  readonly reciboUri?: string | undefined;
 }
 
 export interface GastoPayloadValidado {

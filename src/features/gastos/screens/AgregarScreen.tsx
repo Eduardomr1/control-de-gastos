@@ -54,9 +54,9 @@ export function AgregarScreen() {
     const validacion = validarEntradaGasto({
       amountText: amount,
       categoryId,
-      noteText: note,
-      cuentaId: cuentaElegida,
-      reciboUri,
+      ...(note ? { noteText: note } : {}),
+      ...(cuentaElegida ? { cuentaId: cuentaElegida } : {}),
+      ...(reciboUri ? { reciboUri } : {}),
     });
 
     if (!validacion.esValido) {
