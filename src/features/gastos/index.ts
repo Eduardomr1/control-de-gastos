@@ -10,6 +10,7 @@ export { useCrearGasto } from './hooks/useCrearGasto';
 export { limpiarAlCerrarSesion } from './limpiarAlCerrarSesion';
 export { validarEntradaGasto } from './validacion';
 export type { ValidacionGastoInput, GastoPayloadValidado } from './validacion';
-// Lo usa el generador de recurrentes: un cobro vencido tiene que entrar por la
-// misma puerta que un gasto capturado a mano, no por una propia.
+export { HeaderColapsable } from './components/HeaderColapsable';
+export { calcularMetricasDashboard } from './balance';
+export type { MetricasDashboard } from './balance';
 export { createExpense as crearGasto, fetchExpenses as obtenerGastos } from './api';
