@@ -1,4 +1,5 @@
 import { validarEntradaRecurrente } from './validacion';
+import type { Frecuencia } from './types';
 
 describe('validarEntradaRecurrente', () => {
   it('rechaza nombres vacíos o de solo espacios en blanco', () => {
@@ -86,7 +87,7 @@ describe('validarEntradaRecurrente', () => {
     const res = validarEntradaRecurrente({
       nombre: 'Freelance diseño',
       montoText: '5000',
-      frecuencia: 'quincenal' as any, // prueba de frecuencia no contemplada
+      frecuencia: 'quincenal' as unknown as Frecuencia, // prueba de frecuencia no contemplada
     });
 
     expect(res.esValido).toBe(false);
