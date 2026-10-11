@@ -4,7 +4,6 @@ import { ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MoneyError, parseAmount } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { scaledSize, typography } from '@/shared/theme/tipografia';
 import { GAnimatedPressable, GBoton, GCampo, GTexto } from '@/shared/ui';
@@ -12,6 +11,7 @@ import { useCategorias } from '@/features/categorias';
 import { SelectorDeCuenta, useCuentas } from '@/features/cuentas';
 import { draftOccurredAt } from '../api';
 import { useCrearGasto } from '../hooks/useCrearGasto';
+import { validarEntradaGasto } from '../validacion';
 
 export function AgregarScreen() {
   const params = useLocalSearchParams<{
@@ -51,26 +51,24 @@ export function AgregarScreen() {
   const cuentaElegida = cuentaId ?? cuentas[0]?.id;
 
   function onSave() {
-    try {
-      const amountCents = parseAmount(amount);
-      if (amountCents === 0) {
-        setError('El monto debe ser mayor a cero');
-        return;
-      }
-      setError(null);
-      const nota = note.trim();
-      mutation.mutate({
-        amountCents,
-        currency: 'MXN',
-        categoryId,
-        occurredAt: draftOccurredAt(fecha || undefined),
-        ...(nota ? { note: nota } : {}),
-        ...(cuentaElegida ? { cuentaId: cuentaElegida } : {}),
-        ...(reciboUri ? { reciboUri } : {}),
-      });
-    } catch (e) {
-      setError(e instanceof MoneyError ? e.message : 'Monto inválido');
+    const validacion = validarEntradaGasto({
+      amountText: amount,
+      categoryId,
+      noteText: note,
+      cuentaId: cuentaElegida,
+      reciboUri,
+    });
+
+    if (!validacion.esValido) {
+      setError(validacion.error);
+      return;
     }
+
+    setError(null);
+    mutation.mutate({
+      ...validacion.payload,
+      occurredAt: draftOccurredAt(fecha || undefined),
+    });
   }
 
   return (
@@ -126,6 +124,7 @@ export function AgregarScreen() {
             backgroundColor: colores.superficie,
             borderWidth: 1,
             borderColor: colores.borde,
+            ...colores.sombraTarjeta,
           }}
         >
           <GTexto variante="eyebrow" color={colores.textoSecundario}>
