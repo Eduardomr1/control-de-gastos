@@ -5,7 +5,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SelectorDeCuenta, useCuentas } from '@/features/cuentas';
-import { MoneyError, parseAmount } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { scaledSize, typography } from '@/shared/theme/tipografia';
 import { GAnimatedPressable, GBoton, GCampo, GTexto } from '@/shared/ui';
@@ -13,6 +12,7 @@ import { GAnimatedPressable, GBoton, GCampo, GTexto } from '@/shared/ui';
 import { draftOccurredAt } from '../api/ingresos.local';
 import { useCrearIngreso } from '../hooks/useCrearIngreso';
 import { FUENTES } from '../types';
+import { validarEntradaIngreso } from '../validacion';
 
 export function AgregarIngresoScreen() {
   const [amount, setAmount] = useState('');
@@ -29,28 +29,23 @@ export function AgregarIngresoScreen() {
   const cuentaElegida = cuentaId ?? cuentas[0]?.id;
 
   function onSave() {
-    try {
-      const amountCents = parseAmount(amount);
-      // El backend rechaza el monto <= 0 igual que aquí. Esta validación es
-      // para poder decirlo en el campo; aquella es para que la regla siga de
-      // pie cuando el ingreso no venga de esta pantalla.
-      if (amountCents <= 0) {
-        setError('El monto debe ser mayor a cero');
-        return;
-      }
-      setError(null);
-      const nota = note.trim();
-      mutation.mutate({
-        amountCents,
-        currency: 'MXN',
-        fuente,
-        occurredAt: draftOccurredAt(),
-        ...(nota ? { note: nota } : {}),
-        ...(cuentaElegida ? { cuentaId: cuentaElegida } : {}),
-      });
-    } catch (e) {
-      setError(e instanceof MoneyError ? e.message : 'Monto inválido');
+    const validacion = validarEntradaIngreso({
+      amountText: amount,
+      fuente,
+      noteText: note,
+      cuentaId: cuentaElegida,
+    });
+
+    if (!validacion.esValido || !validacion.payload) {
+      setError(validacion.error ?? 'Verifica los datos ingresados');
+      return;
     }
+
+    setError(null);
+    mutation.mutate({
+      ...validacion.payload,
+      occurredAt: draftOccurredAt(),
+    });
   }
 
   return (
