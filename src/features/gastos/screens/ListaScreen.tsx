@@ -1,8 +1,13 @@
 import { Link, router } from 'expo-router';
-import { useEffect, type ReactNode } from 'react';
-import { Alert, SectionList, Text, View } from 'react-native';
+import { useEffect, type ComponentType, type ReactNode } from 'react';
+import { Alert, SectionList, Text, View, type SectionListProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeInRight, FadeInUp } from 'react-native-reanimated';
+import Animated, {
+  FadeInRight,
+  FadeInUp,
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 import { formatMonthKey } from '@/shared/lib/date';
 import { formatMoney } from '@/shared/lib/money';
@@ -14,11 +19,23 @@ import { signOut } from '@/features/auth';
 import { ResumenDePresupuestos, type Presupuesto } from '@/features/presupuestos';
 import { TarjetasDeSaldo, type SaldoDeCuenta } from '@/features/cuentas';
 import { isRemote } from '@/shared/lib/environment';
+import type { Expense } from '@/types/expense';
 import { useGastos } from '../hooks/useGastos';
 import { FilaGasto } from '../components/FilaGasto';
 import { TotalDelMes } from '../components/TotalDelMes';
+import { HeaderColapsable } from '../components/HeaderColapsable';
 import { ListaVacia } from '../components/ListaVacia';
 import { EsqueletoLista } from '../components/EsqueletoLista';
+import type { SeccionDeMes } from '../secciones';
+
+const AnimatedSectionList = Animated.createAnimatedComponent(
+  SectionList,
+) as unknown as ComponentType<
+  SectionListProps<Expense, SeccionDeMes> & {
+    onScroll?: ReturnType<typeof useAnimatedScrollHandler> | undefined;
+    scrollEventThrottle?: number | undefined;
+  }
+>;
 
 export function ListaScreen() {
   const {
@@ -157,14 +174,30 @@ function ContenidoLista({
   onSalir?: (() => void) | undefined;
   onEliminar: (id: string, label: string) => void;
 }) {
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colores.fondo }}
       testID="screen-lista"
     >
-      <SectionList
+      <HeaderColapsable
+        scrollY={scrollY}
+        currentMonth={currentMonth}
+        totalCents={total}
+        ingresosCents={ingresosCents}
+        onSalir={onSalir}
+      />
+      <AnimatedSectionList
         sections={secciones}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => (item as { readonly id: string }).id}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           <>
             <TotalDelMes
