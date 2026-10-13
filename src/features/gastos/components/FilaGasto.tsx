@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { PanResponder, View } from 'react-native';
+import { memo, useCallback, useMemo, useRef } from 'react';
+import { PanResponder, StyleSheet, View } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -29,7 +29,51 @@ export interface FilaGastoProps {
   readonly onSwipeEliminar?: (() => void) | undefined;
 }
 
-export function FilaGasto({
+/**
+ * Función comparadora exhaustiva para React.memo:
+ * Evita re-renders fantasma cuando otras transacciones en la lista cambian o se eliminan,
+ * evaluando inmutabilidad profunda de propiedades clave de Expense y Category.
+ */
+export function areFilaGastoPropsEqual(
+  prevProps: FilaGastoProps,
+  nextProps: FilaGastoProps
+): boolean {
+  if (prevProps.index !== nextProps.index) return false;
+  if (prevProps.onLongPress !== nextProps.onLongPress) return false;
+  if (prevProps.onSwipeEliminar !== nextProps.onSwipeEliminar) return false;
+
+  const prevExp = prevProps.expense;
+  const nextExp = nextProps.expense;
+  if (
+    prevExp.id !== nextExp.id ||
+    prevExp.amountCents !== nextExp.amountCents ||
+    prevExp.currency !== nextExp.currency ||
+    prevExp.categoryId !== nextExp.categoryId ||
+    prevExp.occurredAt !== nextExp.occurredAt ||
+    prevExp.syncState !== nextExp.syncState ||
+    prevExp.note !== nextExp.note ||
+    prevExp.deletedAt !== nextExp.deletedAt
+  ) {
+    return false;
+  }
+
+  const prevCat = prevProps.categoria;
+  const nextCat = nextProps.categoria;
+  if (prevCat !== nextCat) {
+    if (!prevCat || !nextCat) return false;
+    if (
+      prevCat.id !== nextCat.id ||
+      prevCat.name !== nextCat.name ||
+      prevCat.color !== nextCat.color
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export const FilaGasto = memo(function FilaGasto({
   expense,
   index,
   categoria,
@@ -39,13 +83,38 @@ export function FilaGasto({
   const isPending = expense.syncState === 'pending';
   const nombre = categoria?.name ?? expense.categoryId;
   const color = categoria?.color ?? colores.acento;
-  const fecha = formatDayShort(expense.occurredAt);
   const apilado = apilaPorEscala();
-  const inicial = (nombre.trim()[0] ?? 'G').toUpperCase();
-  const montoTexto = formatMoney(expense.amountCents, expense.currency);
-  const a11y = generarA11yAccionSwipe(nombre, montoTexto);
+
+  const fecha = useMemo(() => formatDayShort(expense.occurredAt), [expense.occurredAt]);
+  const inicial = useMemo(() => (nombre.trim()[0] ?? 'G').toUpperCase(), [nombre]);
+  const montoTexto = useMemo(
+    () => formatMoney(expense.amountCents, expense.currency),
+    [expense.amountCents, expense.currency]
+  );
+  const a11y = useMemo(
+    () => generarA11yAccionSwipe(nombre, montoTexto),
+    [nombre, montoTexto]
+  );
+  const a11yLabel = useMemo(
+    () =>
+      [
+        'Gasto',
+        montoTexto,
+        nombre,
+        fecha,
+        isPending ? 'Pendiente de sincronizar' : '',
+      ]
+        .filter(Boolean)
+        .join('. '),
+    [montoTexto, nombre, fecha, isPending]
+  );
 
   const translateX = useSharedValue(0);
+
+  // Mantenemos referencia mutable al handler de swipe para no recrear
+  // la instancia de PanResponder en cada renderizado (evita GC pauses y frame drops)
+  const onSwipeEliminarRef = useRef(onSwipeEliminar);
+  onSwipeEliminarRef.current = onSwipeEliminar;
 
   const panResponder = useMemo(
     () =>
@@ -63,19 +132,22 @@ export function FilaGasto({
         },
         onPanResponderRelease: (_, gestureState) => {
           const decision = resolverReleaseSwipe(translateX.value, gestureState.vx);
+          translateX.value = withSpring(0, { damping: 18, stiffness: 240 });
           if (decision.accionEjecutada === 'eliminar') {
-            translateX.value = withSpring(0, { damping: 18, stiffness: 240 });
-            onSwipeEliminar?.();
-          } else {
-            translateX.value = withSpring(0, { damping: 18, stiffness: 240 });
+            onSwipeEliminarRef.current?.();
           }
         },
         onPanResponderTerminate: () => {
           translateX.value = withSpring(0, { damping: 18, stiffness: 240 });
         },
       }),
-    [onSwipeEliminar, translateX]
+    [translateX]
   );
+
+  const handlePressEliminar = useCallback(() => {
+    translateX.value = withSpring(0, { damping: 18, stiffness: 240 });
+    onSwipeEliminarRef.current?.();
+  }, [translateX]);
 
   const filaAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
@@ -105,61 +177,61 @@ export function FilaGasto({
     };
   });
 
+  const iconBadgeStyle = useMemo(
+    () => [
+      styles.categoriaBadge,
+      {
+        backgroundColor: `${color}18`,
+        borderColor: `${color}30`,
+      },
+    ],
+    [color]
+  );
+
+  const detalleContainerStyle = useMemo(
+    () => [
+      styles.detalleContainer,
+      apilado ? styles.detalleContainerApilado : styles.detalleContainerHorizontal,
+    ],
+    [apilado]
+  );
+
+  const rowPressableStyle = useMemo(
+    () => [
+      styles.rowPressable,
+      { minHeight: rowMinHeight() },
+      apilado ? styles.rowPressableApilado : styles.rowPressableHorizontal,
+    ],
+    [apilado]
+  );
+
+  const montoStyle = useMemo(
+    () => [styles.montoGasto, apilado ? undefined : styles.montoGastoMargin],
+    [apilado]
+  );
+
   return (
-    <View style={{ position: 'relative', overflow: 'hidden' }}>
+    <View style={styles.container}>
       {/* Fondo de acción rápida (Eliminar) que se revela al hacer swipe hacia la izquierda */}
       <Animated.View
         accessible={false}
-        style={[
-          {
-            position: 'absolute',
-            top: 0,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: '#DC2626',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            paddingRight: 20,
-          },
-          actionAnimatedStyle,
-        ]}
+        style={[styles.actionBackground, actionAnimatedStyle]}
       >
         <GAnimatedPressable
           testID={`btn-eliminar-swipe-${index}`}
           accessibilityRole="button"
           accessibilityLabel={a11y.label}
           scaleTarget={0.92}
-          onPress={() => {
-            translateX.value = withSpring(0, { damping: 18, stiffness: 240 });
-            onSwipeEliminar?.();
-          }}
-          style={{
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-          }}
+          onPress={handlePressEliminar}
+          style={styles.actionPressable}
         >
           <Animated.View
-            style={[
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-              },
-              iconAnimatedStyle,
-            ]}
+            style={[styles.actionIconContainer, iconAnimatedStyle]}
           >
             <GTexto
               variante="label"
               color="#FFFFFF"
-              style={{
-                fontWeight: '800',
-                fontSize: scaledSize(14, 1.4),
-                letterSpacing: 0.3,
-              }}
+              style={styles.actionText}
             >
               ✕ Eliminar
             </GTexto>
@@ -177,81 +249,40 @@ export function FilaGasto({
           accessibilityHint={a11y.hint}
           testID={`gasto-${index}`}
           accessible
-          accessibilityLabel={[
-            'Gasto',
-            montoTexto,
-            nombre,
-            fecha,
-            isPending ? 'Pendiente de sincronizar' : '',
-          ]
-            .filter(Boolean)
-            .join('. ')}
+          accessibilityLabel={a11yLabel}
           scaleTarget={0.98}
-          style={{
-            minHeight: rowMinHeight(),
-            flexDirection: apilado ? 'column' : 'row',
-            flexWrap: 'wrap',
-            alignItems: apilado ? 'flex-start' : 'center',
-            gap: 14,
-            paddingHorizontal: 18,
-            paddingVertical: 14,
-            backgroundColor: colores.superficie,
-          }}
+          style={rowPressableStyle}
         >
           {/* Contenedor de Categoría con Tinte y Letra Inicial */}
           <View
             accessible={false}
-            style={{
-              width: scaledSize(44, 1.5),
-              height: scaledSize(44, 1.5),
-              borderRadius: 14,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: `${color}18`,
-              borderWidth: 1,
-              borderColor: `${color}30`,
-            }}
+            style={iconBadgeStyle}
           >
             <GTexto
               variante="label"
               color={color}
-              style={{
-                fontWeight: '800',
-                fontSize: scaledSize(15, 1.5),
-              }}
+              style={styles.categoriaBadgeText}
             >
               {inicial}
             </GTexto>
           </View>
 
           {/* Detalle del Gasto: Categoría, Nota y Fecha */}
-          <View
-            style={{
-              flexGrow: 1,
-              flexShrink: 1,
-              flexBasis: apilado ? 'auto' : 150,
-              alignSelf: apilado ? 'stretch' : undefined,
-              gap: 2,
-            }}
-          >
-            <GTexto variante="body" style={{ fontWeight: '600', color: colores.texto }}>
+          <View style={detalleContainerStyle}>
+            <GTexto variante="body" style={styles.nombreGasto}>
               {nombre}
             </GTexto>
             <GTexto variante="caption" color={colores.textoSecundario}>
               {expense.note ? `${fecha} · ${expense.note}` : fecha}
             </GTexto>
             {isPending ? (
-              <View
-                style={{
-                  alignSelf: 'flex-start',
-                  backgroundColor: '#FEF3C7',
-                  borderRadius: 6,
-                  paddingHorizontal: 6,
-                  paddingVertical: 2,
-                  marginTop: 2,
-                }}
-              >
-                <GTexto variante="caption" color="#B45309" testID="badge-pending" style={{ fontWeight: '600' }}>
+              <View style={styles.pendingBadge}>
+                <GTexto
+                  variante="caption"
+                  color="#B45309"
+                  testID="badge-pending"
+                  style={styles.pendingText}
+                >
                   ⏱ Pendiente de sincronizar
                 </GTexto>
               </View>
@@ -262,10 +293,7 @@ export function FilaGasto({
           <GTexto
             variante="amount"
             testID={`gasto-monto-${index}`}
-            style={[
-              { fontWeight: '700', letterSpacing: -0.3 },
-              apilado ? undefined : { marginLeft: 'auto' },
-            ]}
+            style={montoStyle}
           >
             {`- ${montoTexto}`}
           </GTexto>
@@ -273,4 +301,101 @@ export function FilaGasto({
       </Animated.View>
     </View>
   );
-}
+}, areFilaGastoPropsEqual);
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  actionBackground: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#DC2626',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingRight: 20,
+  },
+  actionPressable: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  actionIconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionText: {
+    fontWeight: '800',
+    fontSize: scaledSize(14, 1.4),
+    letterSpacing: 0.3,
+  },
+  rowPressable: {
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    backgroundColor: colores.superficie,
+    gap: 14,
+  },
+  rowPressableHorizontal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  rowPressableApilado: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+  },
+  categoriaBadge: {
+    width: scaledSize(44, 1.5),
+    height: scaledSize(44, 1.5),
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  categoriaBadgeText: {
+    fontWeight: '800',
+    fontSize: scaledSize(15, 1.5),
+  },
+  detalleContainer: {
+    flexGrow: 1,
+    flexShrink: 1,
+    gap: 2,
+  },
+  detalleContainerHorizontal: {
+    flexBasis: 150,
+  },
+  detalleContainerApilado: {
+    flexBasis: 'auto',
+    alignSelf: 'stretch',
+  },
+  nombreGasto: {
+    fontWeight: '600',
+    color: colores.texto,
+  },
+  pendingBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginTop: 2,
+  },
+  pendingText: {
+    fontWeight: '600',
+  },
+  montoGasto: {
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  montoGastoMargin: {
+    marginLeft: 'auto',
+  },
+});

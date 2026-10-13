@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { monthKeyOf, nowLocalIso } from '@/shared/lib/date';
@@ -48,15 +49,40 @@ export function useGastos() {
 
   const expenses = (expensesQuery.data ?? []) as Expense[];
   const categories = (categoriasQuery.data ?? []) as Category[];
+
   // La consulta de categorías ya se hacía para el gating de carga; aquí se le
   // da uso: la fila muestra nombre y color en vez del identificador crudo.
   // Sin red, el mapa queda vacío y la fila cae al id.
-  const categorias = new Map(categories.map((c) => [c.id, c]));
+  const categorias = useMemo(
+    () => new Map(categories.map((c) => [c.id, c])),
+    [categories]
+  );
+
   // La lista muestra todos los meses; el encabezado, solo el mes en curso.
-  const secciones = agruparEnSecciones(expenses.filter((e) => !e.deletedAt));
-  const delMes = secciones.find((s) => s.mes === currentMonth);
+  const activeExpenses = useMemo(
+    () => expenses.filter((e) => !e.deletedAt),
+    [expenses]
+  );
+
+  const secciones = useMemo(
+    () => agruparEnSecciones(activeExpenses),
+    [activeExpenses]
+  );
+
+  const delMes = useMemo(
+    () => secciones.find((s) => s.mes === currentMonth),
+    [secciones, currentMonth]
+  );
+
   const gastos = delMes?.data ?? [];
   const total = delMes?.subtotal ?? 0;
+
+  // Sobre TODOS los gastos e ingresos, no solo los del mes: un saldo es
+  // acumulado desde que existe la cuenta, no un corte mensual.
+  const saldos = useMemo(
+    () => saldosPorCuenta(cuentas.cuentas, expenses, ingresos.ingresos),
+    [cuentas.cuentas, expenses, ingresos.ingresos]
+  );
 
   return {
     currentMonth,
@@ -67,9 +93,7 @@ export function useGastos() {
     total,
     ingresosDelMes: ingresos.totalDelMes,
     presupuestos: presupuestos.presupuestos,
-    // Sobre TODOS los gastos e ingresos, no solo los del mes: un saldo es
-    // acumulado desde que existe la cuenta, no un corte mensual.
-    saldos: saldosPorCuenta(cuentas.cuentas, expenses, ingresos.ingresos),
+    saldos,
     eliminar,
   };
 }

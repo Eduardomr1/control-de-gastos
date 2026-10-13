@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'expo-router';
 import { View, ScrollView } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -13,7 +14,7 @@ import { GTexto, GAnimatedPressable } from '@/shared/ui';
  * balance en tiempo real, desglose visual de ingresos/gastos y
  * barra de acciones rápidas con microinteracciones táctiles.
  */
-export function TotalDelMes({
+export const TotalDelMes = memo(function TotalDelMes({
   currentMonth,
   totalCents,
   ingresosCents,
@@ -255,7 +256,7 @@ export function TotalDelMes({
       </View>
     </Animated.View>
   );
-}
+});
 
 /** Enlace en forma de pastilla interactiva con micro-escalado suave al tocar */
 function PastillaAnimada({

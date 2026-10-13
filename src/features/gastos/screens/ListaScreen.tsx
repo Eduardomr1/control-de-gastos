@@ -1,6 +1,21 @@
 import { Link, router } from 'expo-router';
-import { useEffect, type ComponentType, type ReactNode } from 'react';
-import { Alert, SectionList, Text, View, type SectionListProps } from 'react-native';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  type ComponentType,
+  type ReactNode,
+} from 'react';
+import {
+  Alert,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
+  type SectionListProps,
+  type SectionListRenderItemInfo,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   FadeInRight,
@@ -19,7 +34,7 @@ import { signOut } from '@/features/auth';
 import { ResumenDePresupuestos, type Presupuesto } from '@/features/presupuestos';
 import { TarjetasDeSaldo, type SaldoDeCuenta } from '@/features/cuentas';
 import { isRemote } from '@/shared/lib/environment';
-import type { Expense } from '@/types/expense';
+import type { Category, Expense } from '@/types/expense';
 import { useGastos } from '../hooks/useGastos';
 import { FilaGasto } from '../components/FilaGasto';
 import { TotalDelMes } from '../components/TotalDelMes';
@@ -37,6 +52,11 @@ const AnimatedSectionList = Animated.createAnimatedComponent(
   }
 >;
 
+/**
+ * KeyExtractor estático declarado fuera del renderizado para preservar identidad referencial constante.
+ */
+export const extractGastoKey = (item: Expense): string => item.id;
+
 export function ListaScreen() {
   const {
     currentMonth,
@@ -51,26 +71,42 @@ export function ListaScreen() {
     eliminar,
   } = useGastos();
 
-  function confirmarEliminar(id: string, label: string) {
-    Alert.alert('Eliminar gasto', `¿Eliminar ${label}?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => eliminar.mutate(id) },
-    ]);
-  }
+  const confirmarEliminar = useCallback(
+    (id: string, label: string) => {
+      Alert.alert('Eliminar gasto', `¿Eliminar ${label}?`, [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => eliminar.mutate(id) },
+      ]);
+    },
+    [eliminar]
+  );
 
-  const contenido = (
-    <ContenidoLista
-      currentMonth={currentMonth}
-      conteo={gastos.length}
-      ingresosCents={ingresosDelMes}
-      presupuestos={presupuestos}
-      saldos={saldos}
-      secciones={secciones}
-      categorias={categorias}
-      total={total}
-      onSalir={isRemote ? signOut : undefined}
-      onEliminar={confirmarEliminar}
-    />
+  const contenido = useMemo(
+    () => (
+      <ContenidoLista
+        currentMonth={currentMonth}
+        conteo={gastos.length}
+        ingresosCents={ingresosDelMes}
+        presupuestos={presupuestos}
+        saldos={saldos}
+        secciones={secciones}
+        categorias={categorias}
+        total={total}
+        onSalir={isRemote ? signOut : undefined}
+        onEliminar={confirmarEliminar}
+      />
+    ),
+    [
+      currentMonth,
+      gastos.length,
+      ingresosDelMes,
+      presupuestos,
+      saldos,
+      secciones,
+      categorias,
+      total,
+      confirmarEliminar,
+    ]
   );
 
   return (
@@ -119,8 +155,8 @@ function PantallaDeFallo({
   if (failure.tipo === 'SinRed') {
     return (
       <>
-        <View style={{ padding: 8, backgroundColor: '#FEF3C7' }} testID="aviso-sin-conexion">
-          <GTexto variante="caption" color="#92400E" style={{ textAlign: 'center' }}>
+        <View style={styles.avisoSinConexion} testID="aviso-sin-conexion">
+          <GTexto variante="caption" color="#92400E" style={styles.avisoTexto}>
             Sin conexión — mostrando datos guardados
           </GTexto>
         </View>
@@ -130,10 +166,7 @@ function PantallaDeFallo({
   }
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, padding: 32, backgroundColor: colores.fondo }}
-      testID="error-lista"
-    >
+    <SafeAreaView style={styles.errorContainer} testID="error-lista">
       <GTexto variante="titulo">{copiaError(failure)}</GTexto>
     </SafeAreaView>
   );
@@ -151,7 +184,100 @@ function copiaError(failure: Failure): string {
   }
 }
 
-function ContenidoLista({
+interface FilaGastoItemProps {
+  readonly item: Expense;
+  readonly absoluteIndex: number;
+  readonly isFirst: boolean;
+  readonly isLast: boolean;
+  readonly categoria: Category | undefined;
+  readonly onEliminar: (id: string, label: string) => void;
+}
+
+/**
+ * Item individual memoizado:
+ * Aísla las animaciones Reanimated y los callbacks de eliminación por fila,
+ * permitiendo que las demás filas permanezcan intactas a 60 FPS durante scrolls y mutaciones.
+ */
+export const FilaGastoItem = memo(
+  function FilaGastoItem({
+    item,
+    absoluteIndex,
+    isFirst,
+    isLast,
+    categoria,
+    onEliminar,
+  }: FilaGastoItemProps) {
+    const montoFormateado = useMemo(
+      () => formatMoney(item.amountCents, item.currency),
+      [item.amountCents, item.currency]
+    );
+
+    const handleEliminar = useCallback(() => {
+      onEliminar(item.id, montoFormateado);
+    }, [item.id, montoFormateado, onEliminar]);
+
+    const enteringAnim = useMemo(
+      () => FadeInRight.delay(Math.min(absoluteIndex * 25, 250)).springify(),
+      [absoluteIndex]
+    );
+
+    const cardStyle = useMemo(
+      () => [
+        styles.cardBase,
+        isFirst && styles.cardFirst,
+        isLast && styles.cardLast,
+        !isLast && styles.cardNotLast,
+      ],
+      [isFirst, isLast]
+    );
+
+    return (
+      <Animated.View entering={enteringAnim} style={cardStyle}>
+        <FilaGasto
+          expense={item}
+          index={absoluteIndex}
+          categoria={categoria}
+          onLongPress={handleEliminar}
+          onSwipeEliminar={handleEliminar}
+        />
+      </Animated.View>
+    );
+  },
+  (prev, next) => {
+    return (
+      prev.item.id === next.item.id &&
+      prev.item.amountCents === next.item.amountCents &&
+      prev.item.currency === next.item.currency &&
+      prev.item.categoryId === next.item.categoryId &&
+      prev.item.occurredAt === next.item.occurredAt &&
+      prev.item.syncState === next.item.syncState &&
+      prev.item.note === next.item.note &&
+      prev.item.deletedAt === next.item.deletedAt &&
+      prev.absoluteIndex === next.absoluteIndex &&
+      prev.isFirst === next.isFirst &&
+      prev.isLast === next.isLast &&
+      prev.categoria?.id === next.categoria?.id &&
+      prev.categoria?.name === next.categoria?.name &&
+      prev.categoria?.color === next.categoria?.color &&
+      prev.onEliminar === next.onEliminar
+    );
+  }
+);
+
+interface ContenidoListaProps {
+  readonly currentMonth: string;
+  readonly conteo: number;
+  readonly ingresosCents: number;
+  readonly presupuestos: readonly Presupuesto[];
+  readonly saldos: readonly SaldoDeCuenta[];
+  readonly secciones: ReturnType<typeof useGastos>['secciones'];
+  readonly categorias: ReturnType<typeof useGastos>['categorias'];
+  readonly total: number;
+  readonly onSalir?: (() => void) | undefined;
+  readonly onEliminar: (id: string, label: string) => void;
+}
+
+export const ContenidoLista = memo(function ContenidoLista({
   currentMonth,
   conteo,
   ingresosCents,
@@ -162,18 +288,7 @@ function ContenidoLista({
   total,
   onSalir,
   onEliminar,
-}: {
-  currentMonth: string;
-  conteo: number;
-  ingresosCents: number;
-  presupuestos: readonly Presupuesto[];
-  saldos: readonly SaldoDeCuenta[];
-  secciones: ReturnType<typeof useGastos>['secciones'];
-  categorias: ReturnType<typeof useGastos>['categorias'];
-  total: number;
-  onSalir?: (() => void) | undefined;
-  onEliminar: (id: string, label: string) => void;
-}) {
+}: ContenidoListaProps) {
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -181,11 +296,90 @@ function ContenidoLista({
     },
   });
 
+  const gastosDelMes = useMemo(
+    () => secciones.find((s) => s.mes === currentMonth)?.data ?? [],
+    [secciones, currentMonth]
+  );
+
+  const listHeaderComponent = useMemo(
+    () => (
+      <>
+        <TotalDelMes
+          currentMonth={currentMonth}
+          totalCents={total}
+          ingresosCents={ingresosCents}
+          conteo={conteo}
+          onSalir={onSalir}
+        />
+        <TarjetasDeSaldo saldos={saldos} />
+        <ResumenDePresupuestos
+          presupuestos={presupuestos}
+          gastosDelMes={gastosDelMes}
+          mes={currentMonth}
+          categorias={categorias}
+        />
+      </>
+    ),
+    [
+      currentMonth,
+      total,
+      ingresosCents,
+      conteo,
+      onSalir,
+      saldos,
+      presupuestos,
+      gastosDelMes,
+      categorias,
+    ]
+  );
+
+  const listEmptyComponent = useMemo(
+    () => <ListaVacia mes={formatMonthKey(currentMonth)} />,
+    [currentMonth]
+  );
+
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: SeccionDeMes }) => (
+      <GTexto
+        variante="eyebrow"
+        color={colores.textoSecundario}
+        style={styles.sectionHeader}
+      >
+        {section.mes === currentMonth
+          ? section.titulo
+          : `${section.titulo} · ${formatMoney(section.subtotal)}`}
+      </GTexto>
+    ),
+    [currentMonth]
+  );
+
+  const renderItem = useCallback(
+    ({
+      item,
+      index,
+      section,
+    }: SectionListRenderItemInfo<Expense, SeccionDeMes>) => {
+      const isFirst = index === 0;
+      const isLast = index === section.data.length - 1;
+      const absoluteIndex = section.offset + index;
+      const categoria = categorias.get(item.categoryId);
+
+      return (
+        <FilaGastoItem
+          item={item}
+          absoluteIndex={absoluteIndex}
+          isFirst={isFirst}
+          isLast={isLast}
+          categoria={categoria}
+          onEliminar={onEliminar}
+        />
+      );
+    },
+    [categorias, onEliminar]
+  );
+
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: colores.fondo }}
-      testID="screen-lista"
-    >
+    <SafeAreaView style={styles.safeArea} testID="screen-lista">
       <HeaderColapsable
         scrollY={scrollY}
         currentMonth={currentMonth}
@@ -195,89 +389,24 @@ function ContenidoLista({
       />
       <AnimatedSectionList
         sections={secciones}
-        keyExtractor={(item) => (item as { readonly id: string }).id}
+        keyExtractor={extractGastoKey}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        ListHeaderComponent={
-          <>
-            <TotalDelMes
-              currentMonth={currentMonth}
-              totalCents={total}
-              ingresosCents={ingresosCents}
-              conteo={conteo}
-              onSalir={onSalir}
-            />
-            {/* Con una sola cuenta no se dibuja: el saldo de General seria el
-                mismo numero que el balance de arriba, repetido. */}
-            <TarjetasDeSaldo saldos={saldos} />
-
-            {/* Recibe los gastos del mes ya calculados: su consulta y la de
-                presupuestos viajan en el mismo GAsyncGate, asi que las barras
-                nunca aparecen despues del resto con un porcentaje que cambia
-                bajo el pulgar (BUG-006). */}
-            <ResumenDePresupuestos
-              presupuestos={presupuestos}
-              gastosDelMes={secciones.find((s) => s.mes === currentMonth)?.data ?? []}
-              mes={currentMonth}
-              categorias={categorias}
-            />
-          </>
-        }
-        ListEmptyComponent={<ListaVacia mes={formatMonthKey(currentMonth)} />}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        renderSectionHeader={({ section }) => (
-          <GTexto
-            variante="eyebrow"
-            color={colores.textoSecundario}
-            style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 }}
-          >
-            {section.mes === currentMonth
-              ? section.titulo
-              : `${section.titulo} · ${formatMoney(section.subtotal)}`}
-          </GTexto>
-        )}
-        renderItem={({ item, index, section }) => (
-          // El recuadro de la tarjeta se arma por fila: SectionList no envuelve
-          // sus secciones, así que los bordes y el radio viven en los extremos.
-          <Animated.View
-            entering={FadeInRight.delay(Math.min((section.offset + index) * 25, 250)).springify()}
-            style={{
-              marginHorizontal: 16,
-              backgroundColor: colores.superficie,
-              borderColor: colores.borde,
-              borderLeftWidth: 1,
-              borderRightWidth: 1,
-              borderTopWidth: 1,
-              borderBottomWidth: index === section.data.length - 1 ? 1 : 0,
-              borderTopLeftRadius: index === 0 ? 24 : 0,
-              borderTopRightRadius: index === 0 ? 24 : 0,
-              borderBottomLeftRadius: index === section.data.length - 1 ? 24 : 0,
-              borderBottomRightRadius: index === section.data.length - 1 ? 24 : 0,
-              overflow: 'hidden',
-            }}
-          >
-            <FilaGasto
-              expense={item}
-              index={section.offset + index}
-              categoria={categorias.get(item.categoryId)}
-              onLongPress={() =>
-                onEliminar(item.id, formatMoney(item.amountCents, item.currency))
-              }
-              onSwipeEliminar={() =>
-                onEliminar(item.id, formatMoney(item.amountCents, item.currency))
-              }
-            />
-          </Animated.View>
-        )}
+        ListHeaderComponent={listHeaderComponent}
+        ListEmptyComponent={listEmptyComponent}
+        contentContainerStyle={styles.contentContainer}
+        renderSectionHeader={renderSectionHeader}
+        renderItem={renderItem}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        removeClippedSubviews={true}
+        updateCellsBatchingPeriod={50}
       />
 
       <Animated.View
         entering={FadeInUp.duration(400).springify()}
-        style={{
-          position: 'absolute',
-          right: 20,
-          bottom: 32,
-        }}
+        style={styles.fabContainer}
       >
         <Link href="/add" asChild>
           <GAnimatedPressable
@@ -285,28 +414,9 @@ function ContenidoLista({
             accessibilityRole="button"
             accessibilityLabel="Agregar gasto"
             scaleTarget={0.91}
-            style={{
-              width: controlSize(64),
-              height: controlSize(64),
-              borderRadius: controlSize(64) / 2,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: colores.acento,
-              shadowColor: colores.acento,
-              shadowOpacity: 0.45,
-              shadowRadius: 20,
-              elevation: 8,
-            }}
+            style={styles.fabButton}
           >
-            <Text
-              allowFontScaling={false}
-              style={{
-                color: colores.sobreAcento,
-                fontSize: scaledSize(28, 1.5),
-                lineHeight: scaledSize(32, 1.5),
-                fontWeight: '400',
-              }}
-            >
+            <Text allowFontScaling={false} style={styles.fabIcon}>
               +
             </Text>
           </GAnimatedPressable>
@@ -314,4 +424,76 @@ function ContenidoLista({
       </Animated.View>
     </SafeAreaView>
   );
-}
+});
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colores.fondo,
+  },
+  contentContainer: {
+    paddingBottom: 120,
+  },
+  sectionHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  cardBase: {
+    marginHorizontal: 16,
+    backgroundColor: colores.superficie,
+    borderColor: colores.borde,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderTopWidth: 1,
+    overflow: 'hidden',
+  },
+  cardFirst: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  cardLast: {
+    borderBottomWidth: 1,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  cardNotLast: {
+    borderBottomWidth: 0,
+  },
+  fabContainer: {
+    position: 'absolute',
+    right: 20,
+    bottom: 32,
+  },
+  fabButton: {
+    width: controlSize(64),
+    height: controlSize(64),
+    borderRadius: controlSize(64) / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colores.acento,
+    shadowColor: colores.acento,
+    shadowOpacity: 0.45,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  fabIcon: {
+    color: colores.sobreAcento,
+    fontSize: scaledSize(28, 1.5),
+    lineHeight: scaledSize(32, 1.5),
+    fontWeight: '400',
+  },
+  avisoSinConexion: {
+    padding: 8,
+    backgroundColor: '#FEF3C7',
+  },
+  avisoTexto: {
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    padding: 32,
+    backgroundColor: colores.fondo,
+  },
+});
+
