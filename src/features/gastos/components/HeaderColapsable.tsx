@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 import Animated, {
@@ -25,7 +26,7 @@ export interface HeaderColapsableProps {
  * cuando el usuario navega a través de las transacciones del mes.
  * Garantiza visibilidad permanente del balance neto y controles clave (Fintech Sticky Pattern).
  */
-export function HeaderColapsable({
+export const HeaderColapsable = memo(function HeaderColapsable({
   scrollY,
   currentMonth,
   totalCents,
@@ -138,4 +139,5 @@ export function HeaderColapsable({
       </View>
     </Animated.View>
   );
-}
+});
+
