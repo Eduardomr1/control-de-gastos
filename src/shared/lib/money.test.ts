@@ -1,8 +1,11 @@
 import {
   MoneyError,
+  allocateCents,
+  assertCents,
   formatMoney,
   parseAmount,
   percentOf,
+  percentShare,
   splitCents,
   sumCents,
 } from './money';
@@ -135,5 +138,81 @@ describe('guardas de desbordamiento', () => {
 
   it('rechaza un porcentaje no finito', () => {
     expect(() => percentOf(1000, Number.POSITIVE_INFINITY)).toThrow(MoneyError);
+  });
+});
+
+describe('assertCents', () => {
+  it('acepta enteros positivos, cero y negativos dentro del rango seguro', () => {
+    expect(() => assertCents(0)).not.toThrow();
+    expect(() => assertCents(250_50)).not.toThrow();
+    expect(() => assertCents(-99_99)).not.toThrow();
+  });
+
+  it.each([0.5, -1.25, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1])(
+    'rechaza el valor no entero o inseguro %p',
+    (invalido) => {
+      expect(() => assertCents(invalido)).toThrow(MoneyError);
+    },
+  );
+});
+
+describe('percentShare', () => {
+  it('calcula el porcentaje redondeado y devuelve 0 cuando el total es cero', () => {
+    expect(percentShare(250_00, 1_000_00)).toBe(25);
+    expect(percentShare(1, 3)).toBe(33);
+    expect(percentShare(2, 3)).toBe(67);
+    expect(percentShare(500_00, 0)).toBe(0);
+  });
+});
+
+describe('allocateCents', () => {
+  it('reparte por el método de mayor resto dando prioridad al resto fraccionario mayor', () => {
+    // 100 * [1, 1, 4] / 6 -> cuotas exactas [16.666..., 16.666..., 66.666...]
+    // pisos [16, 16, 66] = 98 (faltan 2). Los tres empatan con resto 4/6 -> ganan índices 0 y 1.
+    expect(allocateCents(100, [1, 1, 4])).toEqual([17, 17, 66]);
+    // 10 * [1, 2, 5] / 8 -> cuotas [1.25, 2.50, 6.25] -> pisos [1, 2, 6] = 9 (falta 1).
+    // El mayor resto es 0.50 (índice 1), no el índice 0.
+    expect(allocateCents(10, [1, 2, 5])).toEqual([1, 3, 6]);
+  });
+
+  it.each([
+    [1, [50, 30, 20]],
+    [2, [50, 30, 20]],
+    [100_01, [50, 30, 20]],
+    [9_999, [33, 33, 34]],
+    [12_345_67, [7, 11, 13, 17]],
+    [5_000_00, [1, 2, 3, 5, 8]],
+  ])('conserva exactamente %i centavos con pesos %j', (total, pesos) => {
+    const partes = allocateCents(total, pesos);
+    expect(partes).toHaveLength(pesos.length);
+    expect(sumCents(partes)).toBe(total);
+  });
+
+  it('jamás asigna un centavo residual a una categoría con peso cero', () => {
+    const partes = allocateCents(1, [0, 1, 1]);
+    expect(partes).toEqual([0, 1, 0]);
+    expect(allocateCents(-1, [0, 1, 1])).toEqual([0, -1, 0]);
+  });
+
+  it('conserva el signo y evita -0 con montos negativos o cero', () => {
+    const negativo = allocateCents(-1000, [1, 1, 1]);
+    expect(negativo).toEqual([-334, -333, -333]);
+    expect(sumCents(negativo)).toBe(-1000);
+    expect(allocateCents(0, [3, 7])).toEqual([0, 0]);
+  });
+
+  it('mantiene exactitud con montos grandes cuyo producto intermedio rebasa MAX_SAFE_INTEGER', () => {
+    const montoGrande = 1_000_000_000_000_00; // $1,000,000,000,000.00
+    const pesos = [333, 333, 334];
+    const partes = allocateCents(montoGrande, pesos);
+    expect(sumCents(partes)).toBe(montoGrande);
+  });
+
+  it('rechaza entradas inválidas con MoneyError', () => {
+    expect(() => allocateCents(10.5, [1, 1])).toThrow(MoneyError);
+    expect(() => allocateCents(100, [])).toThrow(MoneyError);
+    expect(() => allocateCents(100, [0, 0, 0])).toThrow(MoneyError);
+    expect(() => allocateCents(100, [-1, 3])).toThrow(MoneyError);
+    expect(() => allocateCents(100, [1.5, 2.5])).toThrow(MoneyError);
   });
 });
