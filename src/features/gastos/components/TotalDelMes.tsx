@@ -59,7 +59,7 @@ export const TotalDelMes = memo(function TotalDelMes({
             <View
               style={{
                 width: 8,
-                height: 8,
+                minHeight: 8,
                 borderRadius: 4,
                 backgroundColor: esPositivo ? '#10B981' : '#F43F5E',
               }}

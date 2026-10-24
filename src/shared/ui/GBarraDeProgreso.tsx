@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { percentShare } from '@/shared/lib/money';
 import { colores } from '@/shared/theme/colores';
 import { scaledSize } from '@/shared/theme/tipografia';
 
@@ -42,7 +43,8 @@ export function GBarraDeProgreso({
 }: GBarraDeProgresoProps) {
   const fraccion = objetivoCents <= 0 ? 0 : actualCents / objetivoCents;
   const porcentaje = Math.min(Math.max(fraccion, 0), 1) * 100;
-  const porcentajeReal = Math.round(fraccion * 100);
+  const porcentajeReal =
+    objetivoCents <= 0 ? 0 : percentShare(actualCents, objetivoCents);
 
   const progresoAnimado = useSharedValue(0);
 

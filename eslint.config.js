@@ -43,11 +43,13 @@ module.exports = tseslint.config(
        */
 
       // BUG-005: la altura fija recorta el texto al ampliar la fuente.
+      // Se excluye `shadowOffset: { width, height }`, donde React Native exige
+      // la propiedad literal `height` para el desplazamiento de sombra.
       'no-restricted-syntax': [
         'error',
         {
           selector:
-            "Property[key.name='height'][value.type='Literal'][value.value!=null]",
+            "Property[key.name='height'][value.type='Literal'][value.value!=null]:not(Property[key.name='shadowOffset'] > ObjectExpression > Property)",
           message:
             'Usa minHeight en lugar de height fija: rompe Dynamic Type (BUG-005).',
         },
