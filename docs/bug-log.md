@@ -380,12 +380,12 @@ Una aserción negativa sobre un elemento inexistente es una prueba que siempre
 pasa. Al escribir `assertNotVisible`, verificar primero que el elemento pueda
 existir en algún estado; si no, la aserción no prueba nada.
 
-Este defecto dio origen a **[Vigía](https://github.com/eduardo-mr1/vigia)**, una
+Este defecto dio origen a **[Vigía](https://github.com/Eduardomr1/vigia)**, una
 herramienta que automatiza esa verificación: cruza los identificadores que el
 código puede producir contra los que esperan las pruebas, y marca los que solo
 existen en las pruebas. Corre sobre este repositorio en cada Pull Request.
 
-**Regresión:** [Vigía](https://github.com/eduardo-mr1/vigia) en cada PR, más el
+**Regresión:** [Vigía](https://github.com/Eduardomr1/vigia) en cada PR, más el
 contraste manual de `testID` contra `id:` de Maestro antes de cada release
 
 ---

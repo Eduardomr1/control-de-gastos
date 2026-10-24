@@ -3,7 +3,7 @@
 App de control de gastos personales para iOS y Android, construida como caso de
 estudio de **desarrollo móvil y aseguramiento de calidad**.
 
-[![CI](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardo-mr1/control-de-gastos/actions/workflows/ci.yml)
+[![CI](https://github.com/Eduardomr1/control-de-gastos/actions/workflows/ci.yml/badge.svg)](https://github.com/Eduardomr1/control-de-gastos/actions/workflows/ci.yml)
 [![Cobertura](https://img.shields.io/badge/cobertura-98%25-brightgreen)](./coverage)
 [![Tests](https://img.shields.io/badge/tests-186%20passing-brightgreen)](./src)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2057-000020)](https://expo.dev)
@@ -199,7 +199,7 @@ para el resto del criterio.
 | Unitario | Jest + ts-jest | 186 pruebas, 98% de cobertura en `src/shared` y `src/features` |
 | Integración | RNTL + MSW | Flujos de componente ↔ estado ↔ red |
 | E2E | Maestro | 6 flujos en dispositivo, ejecutados en CI |
-| Metacalidad | [Vigía](https://github.com/eduardo-mr1/vigia) | Verifica que las pruebas verifiquen algo, en cada PR |
+| Metacalidad | [Vigía](https://github.com/Eduardomr1/vigia) | Verifica que las pruebas verifiquen algo, en cada PR |
 | Accesibilidad | Manual + auditoría | Dynamic Type, contraste, VoiceOver / TalkBack |
 
 La lógica de dominio se prueba de forma exhaustiva porque es donde vive el
@@ -242,7 +242,7 @@ importante del proyecto — la duplicación por doble tap. Ahora la verificació
 hace sobre el total del mes: si el gasto se duplicara, el total sería `$199.98`
 en lugar de `$99.99`.
 
-Ese defecto dio origen a **[Vigía](https://github.com/eduardo-mr1/vigia)**, una
+Ese defecto dio origen a **[Vigía](https://github.com/Eduardomr1/vigia)**, una
 herramienta que detecta la clase completa de error en lugar de ese caso: cruza
 los identificadores que el código puede producir contra los que esperan las
 pruebas. Corre sobre este repositorio en cada Pull Request.

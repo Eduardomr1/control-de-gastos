@@ -10,7 +10,7 @@
 | **Iniciativa** | Normalización arquitectónica Feature-First + errores tipados |
 | **Producto** | Control de Gastos (proyecto personal de portafolio) |
 | **Stack** | React Native 0.86.3 + Expo SDK 57, Expo Router 6, TypeScript strict, TanStack Query, Supabase, MMKV |
-| **Repositorio** | `eduardo-mr1/control-de-gastos`, rama base `main` |
+| **Repositorio** | `Eduardomr1/control-de-gastos`, rama base `main` |
 | **Prioridad** | P2 |
 | **Objetivo** | Que el 100% del código de `src/` viva bajo Feature-First con fronteras verificadas por lint, y que ningún error de backend llegue crudo a la UI |
 | **Inicio** | Lunes 14 de septiembre de 2026 |
