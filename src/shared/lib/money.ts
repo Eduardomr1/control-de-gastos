@@ -92,9 +92,80 @@ export function splitCents(cents: number, parts: number): number[] {
   const abs = Math.abs(cents);
   const base = Math.floor(abs / parts);
   const remainder = abs - base * parts;
-  return Array.from({ length: parts }, (_, i) =>
-    sign * (base + (i < remainder ? 1 : 0)),
-  );
+  return Array.from({ length: parts }, (_, i) => {
+    const share = base + (i < remainder ? 1 : 0);
+    return share === 0 ? 0 : sign * share;
+  });
+}
+
+/**
+ * Reparte `cents` proporcionalmente según `weights` mediante el método de mayor
+ * resto (Hamilton), garantizando que la suma de las partes sea exactamente
+ * `cents` sin perder ni inventar un solo centavo.
+ *
+ * Opera con aritmética entera de precisión arbitraria (`BigInt`) en los
+ * productos intermedios para evitar desbordamientos de IEEE-754 cuando `cents`
+ * es grande, y desempata restos idénticos a favor del menor índice. Un peso en
+ * cero produce resto cero, por lo que jamás recibe centavos residuales.
+ *
+ * @throws {MoneyError} si `cents` no es entero seguro o `weights` es inválido.
+ */
+export function allocateCents(
+  cents: number,
+  weights: readonly number[],
+): number[] {
+  assertCents(cents);
+  if (weights.length === 0) {
+    throw new MoneyError('Se requiere al menos un peso para repartir');
+  }
+
+  let totalWeightBig = 0n;
+  for (const weight of weights) {
+    if (!Number.isSafeInteger(weight) || weight < 0) {
+      throw new MoneyError('Los pesos de reparto deben ser enteros no negativos');
+    }
+    totalWeightBig += BigInt(weight);
+  }
+
+  if (totalWeightBig === 0n) {
+    throw new MoneyError('La suma de los pesos debe ser mayor a cero');
+  }
+
+  const sign = cents < 0 ? -1 : 1;
+  const absCents = Math.abs(cents);
+  const absBig = BigInt(absCents);
+  const pisos: number[] = [];
+  const restos: { readonly indice: number; readonly resto: bigint }[] = [];
+  let sumaPisos = 0;
+
+  for (let i = 0; i < weights.length; i += 1) {
+    const peso = weights[i];
+    if (peso === undefined) continue;
+    const numerador = absBig * BigInt(peso);
+    const piso = Number(numerador / totalWeightBig);
+    const resto = numerador % totalWeightBig;
+    pisos.push(piso);
+    sumaPisos += piso;
+    restos.push({ indice: i, resto });
+  }
+
+  const faltantes = absCents - sumaPisos;
+  restos.sort((a, b) => {
+    if (b.resto !== a.resto) return b.resto > a.resto ? 1 : -1;
+    return a.indice - b.indice;
+  });
+
+  for (let k = 0; k < faltantes; k += 1) {
+    const ganador = restos[k];
+    if (ganador !== undefined) {
+      const actual = pisos[ganador.indice];
+      if (actual !== undefined) {
+        pisos[ganador.indice] = actual + 1;
+      }
+    }
+  }
+
+  return pisos.map((piso) => (piso === 0 ? 0 : sign * piso));
 }
 
 /** Aplica un porcentaje redondeando al centavo más cercano (half-up). */
@@ -139,7 +210,11 @@ export function formatMoney(
   }).format(cents / 100);
 }
 
-function assertCents(value: number): void {
+/**
+ * Verifica que un valor monetario sea un entero seguro de centavos.
+ * Rechaza decimales, `NaN`, `Infinity` y montos fuera de `MAX_SAFE_INTEGER`.
+ */
+export function assertCents(value: number): void {
   if (!Number.isInteger(value)) {
     throw new MoneyError(`Los centavos deben ser enteros, se recibió: ${value}`);
   }
