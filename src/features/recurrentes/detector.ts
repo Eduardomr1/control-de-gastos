@@ -5,14 +5,14 @@ export interface TransaccionHistorica {
   readonly nombre: string;
   readonly amountCents: number;
   readonly fecha: string; // ISO string
-  readonly categoryId?: string;
+  readonly categoryId?: string | undefined;
 }
 
 export interface PatronRecurrenteDetectado {
   readonly nombreSugerido: string;
   readonly amountCents: number;
   readonly frecuencia: Frecuencia;
-  readonly categoryId?: string;
+  readonly categoryId?: string | undefined;
   readonly ocurrenciasCount: number;
   readonly intervaloPromedioDias: number;
   readonly ultimaFecha: string;
@@ -74,7 +74,7 @@ export function detectarPatronesRecurrentes(
     if (frecuencia) {
       const primero = ordenados[0]!;
       const ultimo = ordenados[ordenados.length - 1]!;
-      resultados.push({
+      const patron: PatronRecurrenteDetectado = {
         nombreSugerido: primero.nombre.trim(),
         amountCents: primero.amountCents,
         frecuencia,
@@ -82,7 +82,8 @@ export function detectarPatronesRecurrentes(
         ocurrenciasCount: ordenados.length,
         intervaloPromedioDias: Number(promedioDias.toFixed(1)),
         ultimaFecha: ultimo.fecha,
-      });
+      };
+      resultados.push(patron);
     }
   }
 
