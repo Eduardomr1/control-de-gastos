@@ -110,6 +110,14 @@ describe('generarCsv', () => {
       // que van protegidas por comillas.
       expect(linea.split('"')[0]?.split(',')).toHaveLength(6);
     });
+
+    it('neutraliza inyección de fórmulas que inicien con =, +, @ o -', () => {
+      const linea = datos(generarCsv([fila({ nota: '=cmd|"/C calc"!A0' })]))[0];
+      expect(linea).toContain("'=cmd");
+
+      const lineaAt = datos(generarCsv([fila({ concepto: '@SUM(1,2)' })]))[0];
+      expect(lineaAt).toContain("'@SUM(1,2)");
+    });
   });
 
   it('una fila sin nota deja la columna vacía, no "undefined"', () => {
