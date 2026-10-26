@@ -23,15 +23,19 @@ export const BOM = '\uFEFF';
 const ENCABEZADOS = ['Fecha', 'Tipo', 'Concepto', 'Cuenta', 'Monto', 'Nota'] as const;
 
 /**
- * Escapa un valor según RFC 4180.
+ * Escapa un valor según RFC 4180 y previene inyección de fórmulas de hoja de cálculo.
  *
  * Se entrecomilla solo lo que lo necesita —coma, comilla, salto de línea— y la
- * comilla interior se duplica. Entrecomillar todo también sería válido, pero
- * un CSV donde hasta los montos van entre comillas hace que algunas hojas de
- * cálculo los traten como texto y dejen de sumarse.
+ * comilla interior se duplica. Se prefija con apóstrofe si inicia con caracteres
+ * de fórmula de Excel/Calc (=, +, @, o - con texto).
  */
-function escapar(valor: string): string {
-  return /[",\r\n]/.test(valor) ? `"${valor.replace(/"/g, '""')}"` : valor;
+export function escapar(valor: string): string {
+  if (!valor) return '';
+  let saneado = valor;
+  if (/^[=+\t\r@]/.test(saneado) || (/^-[^\d]/.test(saneado))) {
+    saneado = `'${saneado}`;
+  }
+  return /[",\r\n]/.test(saneado) ? `"${saneado.replace(/"/g, '""')}"` : saneado;
 }
 
 /**
