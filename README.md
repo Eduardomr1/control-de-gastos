@@ -94,6 +94,13 @@ ataca la causa.
 
 → [`src/shared/lib/sync-engine.ts`](./src/shared/lib/sync-engine.ts) · [BUG-003](./docs/bug-log.md)
 
+### 4. Sobres de Presupuesto, Detección de Duplicados y Exportador CSV Seguro
+
+- **Sobres y Reparto Exacto (`allocateCents`):** Aritmética de centavos mediante el método de mayor resto (Hamilton-Hare), garantizando que ningún centavo se pierda ni se cree al repartir presupuestos o dividir gastos.
+- **Proyección de Ritmo y Detección de Recurrentes:** Identificación automática de cadencias semanales y mensuales en gastos fijos y alertas tempranas de sobregiro proyectado a fin de mes.
+- **Detección Heurística de Duplicados:** Protección contra doble-tap accidental o reintentos de red comparando montos en centavos y proximidad temporal.
+- **Exportación CSV Sanitizada (RFC 4180):** Neutralización de inyección de fórmulas de hoja de cálculo (`=`, `+`, `@`, `-`) y preservación de codificación UTF-8 con BOM.
+
 ---
 
 ## Cómo funciona la sincronización
