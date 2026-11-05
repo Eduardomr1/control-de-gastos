@@ -101,6 +101,22 @@ ataca la causa.
 - **Detección Heurística de Duplicados:** Protección contra doble-tap accidental o reintentos de red comparando montos en centavos y proximidad temporal.
 - **Exportación CSV Sanitizada (RFC 4180):** Neutralización de inyección de fórmulas de hoja de cálculo (`=`, `+`, `@`, `-`) y preservación de codificación UTF-8 con BOM.
 
+### 5. Simulador Estocástico Monte Carlo de Flujo de Caja y Fondo de Emergencia
+
+Modelado probabilístico para proyectar la solvencia y resiliencia financiera ante choques inesperados:
+
+- **Simulación Monte Carlo de Runway (`simularRunwayMonteCarlo`):**
+  - Proyección estocástica de $N$ escenarios (1,000 iteraciones) sobre un horizonte de meses ($1 \dots 120$).
+  - Choques gaussianos (Box-Muller) con generador pseudoaleatorio determinista `Mulberry32`, permitiendo reproducibilidad exacta de pruebas.
+  - Métricas percentiles de solvencia: P10 (peor caso 10%), P50 (mediana) y P90 (escenario optimista) tanto para runway restante como para saldo acumulado final.
+  - Detección precisa de la probabilidad porcentual de insolvencia y mes promedio de quiebre.
+- **Reserva Recomendada para Fondo de Contingencia (`calcularFondoEmergenciaRecomendado`):**
+  - Ponderación de gastos esenciales (fijos + variables críticos en centavos enteros).
+  - Factores multiplicadores según perfil de ingresos (asalariado fijo +0 meses, comisiones +2 meses, freelance independiente +3 meses) y dependientes económicos directos (+2 meses).
+  - Cálculo de brecha financiera en centavos y porcentaje de cobertura actual.
+
+→ [`src/features/presupuestos/cashflowSimulator.ts`](./src/features/presupuestos/cashflowSimulator.ts) · [`src/features/presupuestos/cashflowSimulator.test.ts`](./src/features/presupuestos/cashflowSimulator.test.ts)
+
 ---
 
 ## Cómo funciona la sincronización
