@@ -187,3 +187,87 @@ export function simularRunwayMonteCarlo(
     iteracionesEjecutadas: iteraciones,
   };
 }
+
+export type PerfilEstabilidadIngreso =
+  | 'fijo_asalariado'
+  | 'variable_comisiones'
+  | 'freelance_independiente';
+
+export interface ParametrosFondoEmergencia {
+  readonly gastosFijosMensualesCents: number;
+  readonly gastosVariablesEsencialesCents: number;
+  /** Meses recomendados base de reserva (e.g. 3 a 12 meses). Por defecto 3 meses. */
+  readonly mesesObjetivo?: number | undefined;
+  readonly perfilEstabilidad?: PerfilEstabilidadIngreso | undefined;
+  /** Si tiene dependientes económicos directos (aumenta colchón de contingencia). */
+  readonly tieneDependientes?: boolean | undefined;
+  readonly saldoActualCents?: number | undefined;
+}
+
+export interface RecomendacionFondoEmergencia {
+  readonly gastoMensualEsencialCents: number;
+  readonly mesesAjustadosRecomendados: number;
+  readonly montoObjetivoCents: number;
+  readonly saldoActualCents: number;
+  readonly brechaFaltanteCents: number;
+  readonly porcentajeCobertura: number;
+  readonly desgloseFactores: {
+    readonly baseMeses: number;
+    readonly ajustePerfilMeses: number;
+    readonly ajusteDependientesMeses: number;
+  };
+}
+
+/**
+ * Calcula el colchón financiero y fondo de emergencia recomendado ponderando
+ * gastos esenciales fijos/variables, estabilidad de ingresos y cargas familiares.
+ */
+export function calcularFondoEmergenciaRecomendado(
+  params: ParametrosFondoEmergencia
+): RecomendacionFondoEmergencia {
+  assertCents(params.gastosFijosMensualesCents);
+  assertCents(params.gastosVariablesEsencialesCents);
+  if (params.gastosFijosMensualesCents < 0 || params.gastosVariablesEsencialesCents < 0) {
+    throw new MoneyError('Los gastos esenciales deben ser mayores o iguales a cero');
+  }
+
+  const baseMeses = params.mesesObjetivo ?? 3;
+  if (!Number.isInteger(baseMeses) || baseMeses < 1 || baseMeses > 24) {
+    throw new MoneyError('Los meses objetivo deben ser un entero entre 1 y 24');
+  }
+
+  const perfil = params.perfilEstabilidad ?? 'fijo_asalariado';
+  let ajustePerfilMeses = 0;
+  if (perfil === 'variable_comisiones') ajustePerfilMeses = 2;
+  else if (perfil === 'freelance_independiente') ajustePerfilMeses = 3;
+
+  const ajusteDependientesMeses = params.tieneDependientes ? 2 : 0;
+  const mesesAjustadosRecomendados = baseMeses + ajustePerfilMeses + ajusteDependientesMeses;
+
+  const gastoMensualEsencialCents =
+    params.gastosFijosMensualesCents + params.gastosVariablesEsencialesCents;
+  const montoObjetivoCents = gastoMensualEsencialCents * mesesAjustadosRecomendados;
+
+  const saldoActual = params.saldoActualCents ?? 0;
+  assertCents(saldoActual);
+
+  const brechaFaltanteCents = Math.max(0, montoObjetivoCents - Math.max(0, saldoActual));
+  const porcentajeCobertura =
+    montoObjetivoCents === 0
+      ? 100
+      : Math.min(100, Math.round((Math.max(0, saldoActual) / montoObjetivoCents) * 100));
+
+  return {
+    gastoMensualEsencialCents,
+    mesesAjustadosRecomendados,
+    montoObjetivoCents,
+    saldoActualCents: saldoActual,
+    brechaFaltanteCents,
+    porcentajeCobertura,
+    desgloseFactores: {
+      baseMeses,
+      ajustePerfilMeses,
+      ajusteDependientesMeses,
+    },
+  };
+}
