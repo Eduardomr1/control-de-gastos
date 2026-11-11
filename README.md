@@ -117,6 +117,26 @@ Modelado probabilístico para proyectar la solvencia y resiliencia financiera an
 
 → [`src/features/presupuestos/cashflowSimulator.ts`](./src/features/presupuestos/cashflowSimulator.ts) · [`src/features/presupuestos/cashflowSimulator.test.ts`](./src/features/presupuestos/cashflowSimulator.test.ts)
 
+### 6. Motor de Planificación de Metas de Ahorro y Optimización de Excedentes
+
+Motor de matemática financiera para proyectar y acelerar el cumplimiento de metas patrimoniales:
+
+- **Cuota Mensual Requerida con Interés Compuesto e Inflación (`calcularAporteMensualRequerido`):**
+  - Proyección del valor futuro con ajuste de pérdida de poder adquisitivo por inflación acumulada: $FV = PV \cdot (1 + r_{inf})^{n/12}$.
+  - Cálculo de anualidad ordinaria con capitalización mensual para deducir intereses ganados y reducir la carga mensual del ahorrador:
+    $$PMT = \frac{FV_{faltante} \cdot i}{(1 + i)^n - 1}$$
+  - Aritmética estricta en centavos enteros y redondeo hacia arriba ante fracciones indivisibles.
+- **Cronograma de Hitos Clave (`calcularHitosAhorro`):**
+  - Desglose de metas intermedias (25%, 50%, 75% y 100%) con simulación mensual para predecir el mes exacto de llegada.
+- **Análisis de Velocidad de Recuperación (`calcularVelocidadRecuperacion`):**
+  - Detección de desviaciones contra la trayectoria programada y propuesta dual: recálculo del aporte mensual acelerado o prórroga de meses requeridos manteniendo el aporte histórico.
+- **Optimizador Multivariable de Excedentes (`optimizarDistribucionExcedente`):**
+  - Distribución inteligente de superávit mensual entre múltiples metas concurrentes (`alta`, `media`, `baja`).
+  - Prioriza la cobertura de cuotas mínimas sugeridas en metas críticas.
+  - Asigna remanentes mediante el método de mayor resto (Hamilton) vía `allocateCents`, con topes de satisfacción que evitan sobre-financiamiento y preservan el saldo no asignado con exactitud absoluta al centavo.
+
+→ [`src/features/metas/savingsGoalEngine.ts`](./src/features/metas/savingsGoalEngine.ts) · [`src/features/metas/savingsGoalEngine.test.ts`](./src/features/metas/savingsGoalEngine.test.ts)
+
 ---
 
 ## Cómo funciona la sincronización
