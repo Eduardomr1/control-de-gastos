@@ -2,13 +2,14 @@
  * Motor de planificación financiera y proyección de metas de ahorro.
  *
  * Proporciona algoritmos de matemática financiera para cálculo de aportes con interés
- * compuesto e inflación, cronograma de hitos intermedios y análisis de velocidad de
- * recuperación ante déficits.
+ * compuesto e inflación, cronograma de hitos intermedios, análisis de velocidad de
+ * recuperación ante déficits y optimización multivariable de distribución de excedentes
+ * con algoritmo de Hamilton (mayor resto) sin pérdida de centavos.
  *
  * Toda la aritmética monetaria opera en centavos enteros (`assertCents`).
  */
 
-import { assertCents, MoneyError } from '@/shared/lib/money';
+import { assertCents, MoneyError, allocateCents, sumCents } from '@/shared/lib/money';
 
 export type PrioridadMeta = 'alta' | 'media' | 'baja';
 
@@ -63,6 +64,39 @@ export interface ResultadoRecuperacion {
   readonly mesesAdicionalesSiMantieneAporte: number;
   readonly estaAlDia: boolean;
 }
+
+export interface ItemMetaParaAsignacion {
+  readonly id: string;
+  readonly nombre: string;
+  readonly prioridad: PrioridadMeta;
+  readonly objetivoCents: number;
+  readonly actualCents: number;
+  /** Cuota mínima requerida o deseada para el periodo actual en centavos. */
+  readonly cuotaMinimaSugeridaCents?: number | undefined;
+}
+
+export interface AsignacionMeta {
+  readonly id: string;
+  readonly nombre: string;
+  readonly prioridad: PrioridadMeta;
+  readonly aporteAsignadoCents: number;
+  readonly nuevoActualCents: number;
+  readonly metaCompletada: boolean;
+  readonly porcentajeProgresoPostAsignacion: number;
+}
+
+export interface PlanDistribucionMetas {
+  readonly asignaciones: readonly AsignacionMeta[];
+  readonly totalDistribuidoCents: number;
+  readonly excedenteNoAsignadoCents: number;
+  readonly metasCompletadasCount: number;
+}
+
+const PESOS_PRIORIDAD: Record<PrioridadMeta, number> = {
+  alta: 5,
+  media: 3,
+  baja: 1,
+};
 
 /**
  * Valida los parámetros básicos de una meta de ahorro.
@@ -303,5 +337,148 @@ export function calcularVelocidadRecuperacion(
     incrementoMensualCents,
     mesesAdicionalesSiMantieneAporte,
     estaAlDia,
+  };
+}
+
+/**
+ * Optimiza la distribución de un excedente mensual entre múltiples metas de ahorro
+ * activas, priorizando según urgencia e importancia y aplicando el algoritmo de
+ * Hamilton para asignar el remanente con exactitud al centavo sin sobrepasar objetivos.
+ */
+export function optimizarDistribucionExcedente(params: {
+  readonly excedenteDisponibleCents: number;
+  readonly metas: readonly ItemMetaParaAsignacion[];
+}): PlanDistribucionMetas {
+  const { excedenteDisponibleCents, metas } = params;
+
+  assertCents(excedenteDisponibleCents);
+  if (excedenteDisponibleCents < 0) {
+    throw new MoneyError('El excedente disponible no puede ser negativo');
+  }
+
+  if (metas.length === 0 || excedenteDisponibleCents === 0) {
+    return {
+      asignaciones: metas.map((m) => ({
+        id: m.id,
+        nombre: m.nombre,
+        prioridad: m.prioridad,
+        aporteAsignadoCents: 0,
+        nuevoActualCents: m.actualCents,
+        metaCompletada: m.actualCents >= m.objetivoCents,
+        porcentajeProgresoPostAsignacion: Number(
+          Math.min(100, (m.actualCents / m.objetivoCents) * 100).toFixed(2)
+        ),
+      })),
+      totalDistribuidoCents: 0,
+      excedenteNoAsignadoCents: excedenteDisponibleCents,
+      metasCompletadasCount: metas.filter((m) => m.actualCents >= m.objetivoCents).length,
+    };
+  }
+
+  // Validar cada meta
+  for (const meta of metas) {
+    validarParametrosBase(meta.objetivoCents, meta.actualCents, 1);
+    if (meta.cuotaMinimaSugeridaCents !== undefined) {
+      assertCents(meta.cuotaMinimaSugeridaCents);
+    }
+  }
+
+  // Filtramos metas que aún requieran aportes
+  const estadosMetas = metas.map((meta) => {
+    const faltanteCents = Math.max(0, meta.objetivoCents - meta.actualCents);
+    return {
+      meta,
+      faltanteCents,
+      asignadoCents: 0,
+      completada: faltanteCents === 0,
+    };
+  });
+
+  let excedenteRestante = excedenteDisponibleCents;
+
+  // Fase 1: Garantizar la cuota mínima sugerida priorizando por importancia (alta -> media -> baja)
+  const prioridadesOrdenadas: PrioridadMeta[] = ['alta', 'media', 'baja'];
+
+  for (const prio of prioridadesOrdenadas) {
+    for (const estado of estadosMetas) {
+      if (estado.completada || estado.meta.prioridad !== prio) continue;
+      const cuotaSugerida = estado.meta.cuotaMinimaSugeridaCents ?? 0;
+      if (cuotaSugerida <= 0) continue;
+
+      const aAsignar = Math.min(excedenteRestante, estado.faltanteCents, cuotaSugerida);
+      if (aAsignar > 0) {
+        estado.asignadoCents += aAsignar;
+        estado.faltanteCents -= aAsignar;
+        excedenteRestante -= aAsignar;
+        if (estado.faltanteCents === 0) {
+          estado.completada = true;
+        }
+      }
+      if (excedenteRestante === 0) break;
+    }
+    if (excedenteRestante === 0) break;
+  }
+
+  // Fase 2: Distribuir el remanente proporcionalmente según el peso de prioridad
+  // mientras haya excedente y metas incompletas
+  while (excedenteRestante > 0) {
+    const activas = estadosMetas.filter((e) => !e.completada && e.faltanteCents > 0);
+    if (activas.length === 0) break;
+
+    const pesos = activas.map((e) => PESOS_PRIORIDAD[e.meta.prioridad]);
+    const porciones = allocateCents(excedenteRestante, pesos);
+
+    let asignoEnEstaRonda = false;
+
+    for (let i = 0; i < activas.length; i += 1) {
+      const item = activas[i]!;
+      const porcion = porciones[i]!;
+
+      // Capped al faltante de la meta para no sobre-financiarla
+      const aporteEfectivo = Math.min(porcion, item.faltanteCents);
+
+      if (aporteEfectivo > 0) {
+        item.asignadoCents += aporteEfectivo;
+        item.faltanteCents -= aporteEfectivo;
+        excedenteRestante -= aporteEfectivo;
+        if (item.faltanteCents === 0) {
+          item.completada = true;
+        }
+        asignoEnEstaRonda = true;
+      }
+    }
+
+    // Si ninguna porción pudo ser asignada (por ejemplo todos llegaron a su tope), salimos
+    if (!asignoEnEstaRonda) break;
+  }
+
+  const totalDistribuidoCents = sumCents(estadosMetas.map((e) => e.asignadoCents));
+  const excedenteNoAsignadoCents = excedenteDisponibleCents - totalDistribuidoCents;
+
+  const asignaciones: AsignacionMeta[] = estadosMetas.map((e) => {
+    const nuevoActualCents = e.meta.actualCents + e.asignadoCents;
+    const completada = nuevoActualCents >= e.meta.objetivoCents;
+    const porcentaje = Number(
+      Math.min(100, (nuevoActualCents / e.meta.objetivoCents) * 100).toFixed(2)
+    );
+
+    return {
+      id: e.meta.id,
+      nombre: e.meta.nombre,
+      prioridad: e.meta.prioridad,
+      aporteAsignadoCents: e.asignadoCents,
+      nuevoActualCents,
+      metaCompletada: completada,
+      porcentajeProgresoPostAsignacion: porcentaje,
+    };
+  });
+
+  const metasCompletadasCount = asignaciones.filter((a) => a.metaCompletada).length;
+
+  return {
+    asignaciones,
+    totalDistribuidoCents,
+    excedenteNoAsignadoCents,
+    metasCompletadasCount,
   };
 }
